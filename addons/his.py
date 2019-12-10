@@ -96,7 +96,9 @@ def numOfFunctionStatements(func, data):
 # HIS-COMF
 # Relationship of comments to number of statements: > 0.2
 def his_comf(data, rawTokens):
-    lines_of_statements = 0
+    # Set line of statements initial/minimum value to 1
+    # to avoid division by zero.
+    lines_of_statements = 1
     lines_of_comments   = 0
     # Count line of statements in functions
     for func in data.functions:
