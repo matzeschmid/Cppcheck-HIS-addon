@@ -93,6 +93,15 @@ def numOfFunctionStatements(func, data):
                 token = token.next
     return num_of_statements
 
+# Calculate nesting level of token scope regarding final scope
+def calculateNestingLevel(data, token_scope, final_scope):
+    nesting_level = 0
+    scope = token_scope
+    while (scope != None and scope != final_scope):
+        scope = scope.nestedIn
+        nesting_level += 1
+    return nesting_level
+
 # HIS-COMF
 # Relationship of comments to number of statements: > 0.2
 def his_comf(data, rawTokens):
@@ -162,6 +171,36 @@ def his_stmt(data):
         if (num_of_statements > 50):
             reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
 
+# HIS-LEVEL
+# Depth of nesting of a function: 0-4
+def his_level(data):
+    for func in data.functions:
+        # Search for scope of current function
+        for scope in data.scopes:
+            if (scope.type == "Function") and (scope.function == func):
+                # Search function body and calculate nesting depth                
+                token = scope.bodyStart
+                while (token != None and token != scope.bodyEnd):                    
+                    if (token.str not in ["if", "switch", "for", "while", "do"]):
+                        token = token.next
+                        continue
+                    # Ignore while of do-while loop
+                    if (token.str == "while" and token.previous.str == "}" and token.previous.scope.type == "Do"):
+                        token = token.next
+                        continue
+                    token_compound_stm = token
+                    # Walk forward through token list until open curly
+                    # bracket of scope has been reached.
+                    while (token != None and token.str != "{"):
+                        token = token.next
+                    # Calculate nesting level of current scope
+                    if (token != None):
+                        # Nesting level starts at depth 1 for function entry
+                        nesting_level = 1
+                        nesting_level += calculateNestingLevel(data, token.scope, scope)
+                        if (nesting_level > 4):
+                            reportError(token_compound_stm, 'style', 'Depth of nesting of a function: 0-4', 'LEVEL')
+
 # HIS-RETURN
 # Number of return points within a function: 0-1
 def his_return(data):
@@ -217,6 +256,7 @@ if __name__ == '__main__':
             his_goto(cfg)
             his_param(cfg)
             his_stmt(cfg)
+            his_level(cfg)
             his_return(cfg)
             his_calls(cfg)
 

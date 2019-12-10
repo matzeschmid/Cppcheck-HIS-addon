@@ -147,3 +147,40 @@ void his_calls_pass()   // HIS-CALLS
     his_goto(0);
     his_calls_pass()
 }
+
+// Test pattern HIS metric - Depth of nesting of a function: 0-4
+void his_level(int x, int y, int z)
+{
+    if ((x > 0) && (y > 0) && (z > 0)) {
+        for (int i=0; i<x; i++) {
+            int j = y;
+            while (j > 0) {
+                k = z;
+                do {   // HIS-LEVEL
+                    (void)printf("i=%d, j=%d, k=%d\n", i,j,k);
+                    k--;
+                } while (k > 0);
+                j--;
+
+                switch (i)  // HIS-LEVEL
+                {
+                    case 0:
+                        (void)printf("i is zero\n");
+                    break;
+                    default:
+                        (void)printf("i is greater than zero\n");
+                    break;
+                }
+            }
+        }
+    }
+    else if (x <= 0) {
+        (void)printf("x is less than 1\n");
+    }
+    else if (y <= 0) {
+        (void)printf("y is less than 1\n");
+    }
+    else if (z <= 0) {   // HIS-LEVEL
+        (void)printf("z is less than 1\n");
+    }
+}
