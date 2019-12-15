@@ -7,6 +7,7 @@ The follwing metrics are checked according to document `HIS source code metrics 
 | Metric | Description | Range |
 | ------ | ----------- |:-----:|
 | HIS-COMF | Relationship of comments to number of statements | > 0.2 |
+| HIS-PATH | Number of non cyclic remark paths | 1-80 |
 | HIS-GOTO | Number of goto statements | 0 |
 | HIS-STCYC | Cyclomatic complexity v(G) of functions by McCabe | 1-10 |
 | HIS-CALLS | Number of called functions excluding duplicates | 0-7 |
