@@ -148,7 +148,7 @@ void his_calls_fail()   // HIS-CALLS
 }
 
 // Test pattern HIS metric - Depth of nesting of a function: 0-4
-void his_level(int x, int y, int z)
+void his_level(int x, int y, int z)	// HIS-PATH
 {
     if ((x > 0) && (y > 0) && (z > 0)) {
         for (int i=0; i<x; i++) {

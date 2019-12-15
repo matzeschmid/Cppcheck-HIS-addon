@@ -102,6 +102,26 @@ def calculateNestingLevel(data, token_scope, final_scope):
         nesting_level += 1
     return nesting_level
 
+# Determine the number of switch cases
+def numOfSwitchCases(token):
+	num_cases = 0
+	while (token != None and token.str != "{"):
+		token = token.next
+	if (token != None):
+		token_switch_end = token.link
+	while (token != None and token != token_switch_end):
+		if (token.str == "case"):
+			num_cases += 1
+		token = token.next
+	return num_cases
+
+# Determine if "while" keyword belongs to do-while loop
+def isWhileOfDoWhile(token):
+	ret_val = False
+	if (token.str == "while" and token.previous.str == "}" and token.previous.scope.type == "Do"):
+		ret_val = True
+	return ret_val
+
 # HIS-COMF
 # Relationship of comments to number of statements: > 0.2
 def his_comf(data, rawTokens):
@@ -125,6 +145,27 @@ def his_comf(data, rawTokens):
         printf("Lines of comments:   %d\n", lines_of_comments)
         printf("HIS-COMF:            %.2f\n", lines_of_comments / lines_of_statements)        
         reportError(rawTokens[0], 'style', 'Relationship of comments to number of statements: > 0.2', 'COMF')
+
+# HIS-PATH
+# Number of non cyclic remark paths: 1-80
+def his_path(data):
+	for func in data.functions:
+        # Search for scope of current function
+		for scope in data.scopes:
+			if (scope.type == "Function") and (scope.function == func):
+				# Calculate number of non cyclic remark paths for function body
+				num_paths = 1
+				token = scope.bodyStart
+				while (token != None and token != scope.bodyEnd):
+					if (token.str in ["if", "for", "do"]):
+						num_paths *= 2
+					elif (token.str == "while" and isWhileOfDoWhile(token) == False):
+						num_paths *= 2
+					elif (token.str == "switch"):
+						num_paths *= (1 + numOfSwitchCases(token))
+					token = token.next
+				if (num_paths > 80):
+					reportError(func.tokenDef, 'style', 'Number of non cyclic remark paths: 1-80', 'PATH')
 
 # HIS-GOTO
 # Number of goto statements: 0
@@ -221,7 +262,7 @@ def his_level(data):
                         token = token.next
                         continue
                     # Ignore while of do-while loop
-                    if (token.str == "while" and token.previous.str == "}" and token.previous.scope.type == "Do"):
+                    if (token.str == "while" and isWhileOfDoWhile(token) == True):
                         token = token.next
                         continue
                     token_compound_stm = token
@@ -289,6 +330,7 @@ if __name__ == '__main__':
             if (len(data.configurations) > 1) and (not args.quiet):
                 print('Checking %s, config %s...' % (dumpfile, cfg.name))
             his_comf(cfg, data.rawTokens)
+            his_path(cfg)
             his_goto(cfg)
             his_stcyc(cfg)
             his_param(cfg)
