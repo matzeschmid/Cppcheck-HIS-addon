@@ -105,10 +105,10 @@ def calculateNestingLevel(data, token_scope, final_scope):
 # HIS-COMF
 # Relationship of comments to number of statements: > 0.2
 def his_comf(data, rawTokens):
-    # Set line of statements initial/minimum value to 1
+    # Set line of statements initial/minimum value to 1.0
     # to avoid division by zero.
-    lines_of_statements = 1
-    lines_of_comments   = 0
+    lines_of_statements = 1.0
+    lines_of_comments   = 0.0
     # Count line of statements in functions
     for func in data.functions:
         lines_of_statements += numOfFunctionStatements(func, data)
@@ -120,7 +120,6 @@ def his_comf(data, rawTokens):
         elif token.str.startswith("/*"):
             lines_of_comments += (len(re.findall(r'x\s*\*', token.str)) + 1)
 
-    #if (len(rawTokens) > 0 and lines_of_statements > 0 and (lines_of_comments / lines_of_statements) < 0.2):
     if ((lines_of_comments / lines_of_statements) < 0.2):
         printf("Lines of statements: %d\n", lines_of_statements)
         printf("Lines of comments:   %d\n", lines_of_comments)
