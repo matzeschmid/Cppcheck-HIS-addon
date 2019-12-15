@@ -8,6 +8,7 @@ The follwing metrics are checked according to document `HIS source code metrics 
 | ------ | ----------- |:-----:|
 | HIS-COMF | Relationship of comments to number of statements | > 0.2 |
 | HIS-GOTO | Number of goto statements | 0 |
+| HIS-STCYC | Cyclomatic complexity v(G) of functions by McCabe | 1-10 |
 | HIS-CALLS | Number of called functions excluding duplicates | 0-7 |
 | HIS-PARAM | Number of function parameters | 0-5 |
 | HIS-STMT | Number of statements per function | 1-50 |
