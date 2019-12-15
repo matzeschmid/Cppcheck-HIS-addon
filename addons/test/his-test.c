@@ -16,7 +16,7 @@ invalid_param:
 }
 
 // Test pattern HIS metric - Number of statements per function: 1-50
-void his_stm_num_fail(int count)    // HIS-STMT
+void his_stm_num_fail(int count)    // HIS-STMT HIS-STCYC
 {
     int val = 0;
     if (count > 0) {
@@ -133,8 +133,7 @@ void his_calls_pass()
     his_goto(0);
 }
 
-// Test pattern HIS metric - Number of called functions excluding duplicates: 0-7
-void his_calls_pass()   // HIS-CALLS
+void his_calls_fail()   // HIS-CALLS
 {
     his_return_none_pass();
     his_return_single_pass(1, 2);
