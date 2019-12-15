@@ -133,6 +133,43 @@ def his_goto(data):
         if token.str == "goto":
             reportError(token, 'style', 'Number of goto Statements should be 0', 'GOTO')
 
+# HIS-STCYC
+# Cyclomatic complexity v(G) of functions by McCabe: 1-10
+def his_stcyc(data):
+	for func in data.functions:
+        # Search for scope of current function
+		for scope in data.scopes:
+			if (scope.type == "Function") and (scope.function == func):
+				# Calculate cyclomatic complexity for function body
+				vG = 0
+				num_nodes = 2
+				num_edges = 1
+				num_components = 1
+				token = scope.bodyStart
+				while (token != None and token != scope.bodyEnd):
+					if (token.str in ["for", "while", "do"]):
+						num_nodes += 3
+						num_edges += 4
+					elif (token.str == "if"):
+						num_nodes += 3
+						num_edges += 4
+					elif (token.str == "else"):
+						num_nodes += 1
+						num_edges += 1
+					elif (token.str == "switch"):
+						num_nodes += 2
+						num_edges += 1
+					elif (token.str in ["case", "default"]):
+						num_nodes += 1
+						num_edges += 2
+					token = token.next
+						
+				vG = num_edges - num_nodes + (2 * num_components)
+				#printf("Function name: %s\n", func.name)
+				#printf("edges: %d, nodes: %d, vG: %d\n\n", num_edges, num_nodes, vG);
+				if (vG > 10):
+					reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10', 'STCYC')
+
 # HIS-CALLS
 # Number of called functions excluding duplicates: 0-7
 def his_calls(data):
@@ -253,6 +290,7 @@ if __name__ == '__main__':
                 print('Checking %s, config %s...' % (dumpfile, cfg.name))
             his_comf(cfg, data.rawTokens)
             his_goto(cfg)
+            his_stcyc(cfg)
             his_param(cfg)
             his_stmt(cfg)
             his_level(cfg)
