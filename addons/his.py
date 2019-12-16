@@ -212,7 +212,7 @@ def his_stcyc(data):
 					reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10', 'STCYC')
 
 # HIS-CALLING
-# Number of subfunctions calling this function: 0-5
+# Number of subfunctions calling a function: 0-5
 def his_calling(data):
     funcdict = dict()
     for func in data.functions:
@@ -232,7 +232,7 @@ def his_calling(data):
     for func in funcdict:
         # printf("%s : %d\n", func.name, funcdict[func])
         if (funcdict[func] > 5):
-            reportError(func.tokenDef, 'style', 'Number of subfunctions calling this function: 0-5', 'CALLING')
+            reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5', 'CALLING')
 
 # HIS-CALLS
 # Number of called functions excluding duplicates: 0-7
