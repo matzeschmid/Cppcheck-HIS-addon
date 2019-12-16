@@ -1,4 +1,9 @@
 // HIS-COMF
+
+#include <stdio.h>
+
+void his_return_none_pass(); // HIS-CALLING
+
 /*
  * To test:
  * ~/cppcheck/cppcheck --dump his-test.c && python ../his.py -verify his-test.c.dump
@@ -10,7 +15,7 @@ void his_goto(int param)
     if (param < 0) {
         goto invalid_param; // HIS-GOTO 
     }
-    (void)printf("Param: %d", param)
+    (void)printf("Param: %d", param);
 invalid_param:
     return;
 }
@@ -76,8 +81,6 @@ void his_stm_num_fail(int count)    // HIS-STMT HIS-STCYC
         (void)printf("Invalid count value\n");
         his_return_none_pass();
     }
-
-    return val;
 }
 
 // Test pattern HIS metric - Number of function parameters: 0-5
@@ -103,7 +106,7 @@ void his_param_num_fail(int p1, int p2, int p3, int p4, int p5, int p6)    // HI
 }
 
 // Test pattern HIS metric - Number of return points within a function: 0-1
-void his_return_none_pass() // HIS-CALLING
+void his_return_none_pass()
 {
 }
 
@@ -147,7 +150,7 @@ void his_calls_fail()   // HIS-CALLS
     his_param_num_fail(1,2,3,4,5,6);
     (void)printf("World");
     his_goto(0);
-    his_calls_pass()
+    his_calls_pass();
 }
 
 // Test pattern HIS metric - Depth of nesting of a function: 0-4
@@ -157,7 +160,7 @@ void his_level(int x, int y, int z)	// HIS-PATH
         for (int i=0; i<x; i++) {
             int j = y;
             while (j > 0) {
-                k = z;
+                int k = z;
                 do {   // HIS-LEVEL
                     (void)printf("i=%d, j=%d, k=%d\n", i,j,k);
                     k--;
