@@ -211,6 +211,29 @@ def his_stcyc(data):
 				if (vG > 10):
 					reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10', 'STCYC')
 
+# HIS-CALLING
+# Number of subfunctions calling this function: 0-5
+def his_calling(data):
+    funcdict = dict()
+    for func in data.functions:
+        # Add function to dictionary and set called counter to 0
+        funcdict[func] = 0
+    for func in data.functions:
+        # Search for scope of current function
+        for scope in data.scopes:
+            if (scope.type == "Function") and (scope.function == func):
+                # Search function body for function calls
+                token = scope.bodyStart
+                while (token != None and token != scope.bodyEnd):
+                    if isFunctionCall(token):
+                        if (token.function in funcdict):
+                            funcdict[token.function] = funcdict[token.function] + 1
+                    token = token.next
+    for func in funcdict:
+        # printf("%s : %d\n", func.name, funcdict[func])
+        if (funcdict[func] > 5):
+            reportError(func.tokenDef, 'style', 'Number of subfunctions calling this function: 0-5', 'CALLING')
+
 # HIS-CALLS
 # Number of called functions excluding duplicates: 0-7
 def his_calls(data):
@@ -333,11 +356,12 @@ if __name__ == '__main__':
             his_path(cfg)
             his_goto(cfg)
             his_stcyc(cfg)
+            his_calling(cfg)
+            his_calls(cfg)
             his_param(cfg)
             his_stmt(cfg)
             his_level(cfg)
             his_return(cfg)
-            his_calls(cfg)
 
         if VERIFY:
             for expected in VERIFY_EXPECTED:

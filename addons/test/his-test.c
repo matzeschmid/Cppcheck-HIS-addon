@@ -67,13 +67,14 @@ void his_stm_num_fail(int count)    // HIS-STMT HIS-STCYC
             break;
             default:
                 (void)printf("VAL default\n");
-
+                his_return_none_pass();
             break;
         }
     }
     else {
         (void)printf("count: %d\n", count);
         (void)printf("Invalid count value\n");
+        his_return_none_pass();
     }
 
     return val;
@@ -100,7 +101,7 @@ void his_param_num_fail(int p1, int p2, int p3, int p4, int p5, int p6)    // HI
 }
 
 // Test pattern HIS metric - Number of return points within a function: 0-1
-void his_return_none_pass()
+void his_return_none_pass() // HIS-CALLING
 {
 }
 
