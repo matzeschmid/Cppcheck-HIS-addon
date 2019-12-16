@@ -222,13 +222,17 @@ def his_calling(data):
         # Search for scope of current function
         for scope in data.scopes:
             if (scope.type == "Function") and (scope.function == func):
-                # Search function body for function calls
+                # Search function body for function calls reduced
+                # by duplicates
                 token = scope.bodyStart
+                called_funcs = list()
                 while (token != None and token != scope.bodyEnd):
                     if isFunctionCall(token):
-                        if (token.function in funcdict):
-                            funcdict[token.function] = funcdict[token.function] + 1
+                        if (token.function in funcdict and token.function not in called_funcs):
+                            called_funcs.append(token.function)                            
                     token = token.next
+                for func_call in called_funcs:
+                    funcdict[func_call] = funcdict[func_call] + 1
     for func in funcdict:
         # printf("%s : %d\n", func.name, funcdict[func])
         if (funcdict[func] > 5):

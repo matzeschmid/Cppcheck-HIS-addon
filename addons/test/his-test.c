@@ -88,6 +88,7 @@ void his_param_num_pass(int p1, int p2, int p3, int p4, int p5)
     (void)p3;
     (void)p4;
     (void)p5;
+    his_return_none_pass();
 }
 
 void his_param_num_fail(int p1, int p2, int p3, int p4, int p5, int p6)    // HIS-PARAM
@@ -98,6 +99,7 @@ void his_param_num_fail(int p1, int p2, int p3, int p4, int p5, int p6)    // HI
     (void)p4;
     (void)p5;
     (void)p6;
+    his_return_none_pass();
 }
 
 // Test pattern HIS metric - Number of return points within a function: 0-1
@@ -183,4 +185,5 @@ void his_level(int x, int y, int z)	// HIS-PATH
     else if (z <= 0) {   // HIS-LEVEL
         (void)printf("z is less than 1\n");
     }
+    his_return_none_pass();
 }
