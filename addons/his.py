@@ -72,11 +72,22 @@ def isFunctionCall(token):
         return False
     return True
 
+# Does the scope match the function object
+def scopeMatchesFunction(scope, func):
+    ret_val = False
+    if (hasattr(scope, 'function') == True):
+        if (scope.function == func):
+            ret_val = True
+    elif (scope.className == func.name):
+        ret_val = True
+
+    return ret_val
+
 # Count line of statements in function
 def numOfFunctionStatements(func, data):
     num_of_statements = 0
     for scope in data.scopes:
-        if (scope.type == "Function") and (scope.function == func):
+        if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
             token = scope.bodyStart.next
             current_line_nr = -1
             # Search function body and count statements
@@ -152,7 +163,7 @@ def his_path(data):
 	for func in data.functions:
         # Search for scope of current function
 		for scope in data.scopes:
-			if (scope.type == "Function") and (scope.function == func):
+			if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
 				# Calculate number of non cyclic remark paths for function body
 				num_paths = 1
 				token = scope.bodyStart
@@ -180,7 +191,7 @@ def his_stcyc(data):
 	for func in data.functions:
         # Search for scope of current function
 		for scope in data.scopes:
-			if (scope.type == "Function") and (scope.function == func):
+			if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
 				# Calculate cyclomatic complexity for function body
 				vG = 0
 				num_nodes = 2
@@ -221,7 +232,7 @@ def his_calling(data):
     for func in data.functions:
         # Search for scope of current function
         for scope in data.scopes:
-            if (scope.type == "Function") and (scope.function == func):
+            if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
                 # Search function body for function calls reduced
                 # by duplicates
                 token = scope.bodyStart
@@ -244,7 +255,7 @@ def his_calls(data):
     for func in data.functions:
         # Search for scope of current function
         for scope in data.scopes:
-            if (scope.type == "Function") and (scope.function == func):
+            if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
                 # Search function body for function calls
                 token = scope.bodyStart
                 func_calls = list()
@@ -281,7 +292,7 @@ def his_level(data):
     for func in data.functions:
         # Search for scope of current function
         for scope in data.scopes:
-            if (scope.type == "Function") and (scope.function == func):
+            if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
                 # Search function body and calculate nesting depth                
                 token = scope.bodyStart
                 while (token != None and token != scope.bodyEnd):                    
@@ -311,7 +322,7 @@ def his_return(data):
     for func in data.functions:
         # Search for scope of current function
         for scope in data.scopes:
-            if (scope.type == "Function") and (scope.function == func):
+            if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
                 # Search function body for return key word
                 token = scope.bodyStart
                 num_return_points = 0
