@@ -324,7 +324,20 @@ def his_return(data):
 
 def get_args():
     parser = cppcheckdata.ArgumentParser()
+
+	# Since Cppcheck version 1.90 some command line options are already handled
+    # by cppcheckdata.ArgumentParser().
+    # Thus check first to avoid conflicts by adding options twice and to make
+    # this script backward compatible. 
+    args, rest = parser.parse_known_args()
+    if not hasattr(args, 'dumpfile'):
+        parser.add_argument("dumpfile", nargs='*', help="Path of dump files from cppcheck")
+    if not hasattr(args, 'quiet'):
+        parser.add_argument('-q', '--quiet', action='store_true', help='do not print "Checking ..." lines')
+    if not hasattr(args, 'cli'):
+        parser.add_argument('--cli', help='Addon is executed from Cppcheck', action='store_true')
     parser.add_argument("-verify", help=argparse.SUPPRESS, action="store_true")
+
     return parser.parse_args()
 
 if __name__ == '__main__':
