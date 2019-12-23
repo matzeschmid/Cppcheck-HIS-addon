@@ -1,6 +1,8 @@
 # Cppcheck-HIS-addon
 HIS metric python addon for Cppcheck
 
+This addon has been tested on a machine running 64-bit Ubuntu 19.10 with Cppcheck v1.84 up to latest release v1.90 .
+
 # Supported HIS metric checks
 The follwing metrics are checked according to document `HIS source code metrics v1.3.1` .
 
