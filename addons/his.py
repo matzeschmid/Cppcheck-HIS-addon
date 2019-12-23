@@ -60,7 +60,10 @@ def reportError(token, severity, msg, id):
     if VERIFY:
         VERIFY_ACTUAL.append(str(token.linenr) + ':HIS-' + id)
     else:
-        cppcheckdata.reportError(token, severity, msg, 'HIS', id)
+        try:
+            cppcheckdata.reportError(token, severity, msg, 'HIS', id)
+        except ValueError:
+            sys.stderr.write('[' + token.file + ':' + str(token.linenr) + '] (' + severity + ') ' + msg + ' [HIS-' + id + ']\n')
 
 # Is this a function call
 def isFunctionCall(token):
