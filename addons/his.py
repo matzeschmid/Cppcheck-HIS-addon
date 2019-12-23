@@ -380,12 +380,13 @@ if __name__ == '__main__':
             print("no input files.")
         sys.exit(0)
 
+    num_raw_tokens = 0
     for dumpfile in args.dumpfile:
         if not args.quiet:
             print('Checking %s...' % dumpfile)
 
         data = cppcheckdata.parsedump(dumpfile)
-
+		
         if VERIFY:
             VERIFY_ACTUAL = []
             VERIFY_EXPECTED = []
@@ -398,7 +399,7 @@ if __name__ == '__main__':
         for cfg in data.configurations:
             if (len(data.configurations) > 1) and (not args.quiet):
                 print('Checking %s, config %s...' % (dumpfile, cfg.name))
-            his_comf(cfg, data.rawTokens)
+            his_comf(cfg, data.rawTokens[num_raw_tokens:])
             his_path(cfg)
             his_goto(cfg)
             his_stcyc(cfg)
@@ -418,6 +419,8 @@ if __name__ == '__main__':
                 if actual not in VERIFY_EXPECTED:
                     print('Not expected: ' + actual)
                     sys.exit(1)
+
+        num_raw_tokens = len(data.rawTokens)
 
     if not args.no_summary and not args.verify:
         printf("\nSummary of violations\n")
