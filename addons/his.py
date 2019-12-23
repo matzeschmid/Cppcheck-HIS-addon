@@ -51,6 +51,19 @@ KEYWORDS = {
     'while'
 }
 
+his_stats = {
+    'COMF'   : 0, 
+    'PATH'   : 0, 
+    'GOTO'   : 0, 
+    'STCYC'  : 0, 
+    'CALLING': 0, 
+    'CALLS'  : 0, 
+    'PARAM'  : 0, 
+    'STMT'   : 0, 
+    'LEVEL'  : 0, 
+    'RETURN' : 0
+}
+
 # Formatted printf like function usable by Python 2.7.x and 3.x code.
 def printf(format, *args):
     sys.stdout.write(format % args)
@@ -64,6 +77,7 @@ def reportError(token, severity, msg, id):
             cppcheckdata.reportError(token, severity, msg, 'HIS', id)
         except ValueError:
             sys.stderr.write('[' + token.file + ':' + str(token.linenr) + '] (' + severity + ') ' + msg + ' [HIS-' + id + ']\n')
+        his_stats[id] = his_stats[id] + 1
 
 # Is this a function call
 def isFunctionCall(token):
@@ -155,10 +169,10 @@ def his_comf(data, rawTokens):
             lines_of_comments += (len(re.findall(r'x\s*\*', token.str)) + 1)
 
     if ((lines_of_comments / lines_of_statements) < 0.2):
-        printf("Lines of statements: %d\n", lines_of_statements)
-        printf("Lines of comments:   %d\n", lines_of_comments)
-        printf("HIS-COMF:            %.2f\n", lines_of_comments / lines_of_statements)        
         reportError(rawTokens[0], 'style', 'Relationship of comments to number of statements: > 0.2', 'COMF')
+        printf("    Lines of statements: %d\n", lines_of_statements)
+        printf("    Lines of comments:   %d\n", lines_of_comments)
+        printf("    HIS-COMF:            %.2f\n", lines_of_comments / lines_of_statements)                
 
 # HIS-PATH
 # Number of non cyclic remark paths: 1-80
@@ -350,7 +364,8 @@ def get_args():
         parser.add_argument('-q', '--quiet', action='store_true', help='do not print "Checking ..." lines')
     if not hasattr(args, 'cli'):
         parser.add_argument('--cli', help='Addon is executed from Cppcheck', action='store_true')
-    parser.add_argument("-verify", help=argparse.SUPPRESS, action="store_true")
+    parser.add_argument('-verify', help=argparse.SUPPRESS, action="store_true")
+    parser.add_argument('--no-summary', help='Hide summary of violations', action="store_true")
 
     return parser.parse_args()
 
@@ -403,3 +418,10 @@ if __name__ == '__main__':
                 if actual not in VERIFY_EXPECTED:
                     print('Not expected: ' + actual)
                     sys.exit(1)
+
+    if not args.no_summary and not args.verify:
+        printf("\nSummary of violations\n")
+        printf("---------------------\n")
+        for key in his_stats:
+            printf("%s: %d\n", key.ljust(10), his_stats[key])
+
