@@ -52,15 +52,15 @@ KEYWORDS = {
 }
 
 his_stats = {
-    'COMF'   : 0, 
-    'PATH'   : 0, 
-    'GOTO'   : 0, 
-    'STCYC'  : 0, 
-    'CALLING': 0, 
-    'CALLS'  : 0, 
-    'PARAM'  : 0, 
-    'STMT'   : 0, 
-    'LEVEL'  : 0, 
+    'COMF'   : 0,
+    'PATH'   : 0,
+    'GOTO'   : 0,
+    'STCYC'  : 0,
+    'CALLING': 0,
+    'CALLS'  : 0,
+    'PARAM'  : 0,
+    'STMT'   : 0,
+    'LEVEL'  : 0,
     'RETURN' : 0
 }
 
@@ -172,7 +172,7 @@ def his_comf(data, rawTokens):
         reportError(rawTokens[0], 'style', 'Relationship of comments to number of statements: > 0.2', 'COMF')
         printf("    Lines of statements: %d\n", lines_of_statements)
         printf("    Lines of comments:   %d\n", lines_of_comments)
-        printf("    HIS-COMF:            %.2f\n", lines_of_comments / lines_of_statements)                
+        printf("    HIS-COMF:            %.2f\n", lines_of_comments / lines_of_statements)
 
 # HIS-PATH
 # Number of non cyclic remark paths: 1-80
@@ -232,7 +232,7 @@ def his_stcyc(data):
 						num_nodes += 1
 						num_edges += 2
 					token = token.next
-						
+
 				vG = num_edges - num_nodes + (2 * num_components)
 				#printf("Function name: %s\n", func.name)
 				#printf("edges: %d, nodes: %d, vG: %d\n\n", num_edges, num_nodes, vG);
@@ -257,7 +257,7 @@ def his_calling(data):
                 while (token != None and token != scope.bodyEnd):
                     if isFunctionCall(token):
                         if (token.function in funcdict and token.function not in called_funcs):
-                            called_funcs.append(token.function)                            
+                            called_funcs.append(token.function)
                     token = token.next
                 for func_call in called_funcs:
                     funcdict[func_call] = funcdict[func_call] + 1
@@ -298,7 +298,7 @@ def his_param(data):
 def his_stmt(data):
     num_of_statements = 0
     # Count line of statements in functions
-    for func in data.functions:        
+    for func in data.functions:
         num_of_statements = numOfFunctionStatements(func, data)
         if (num_of_statements > 50):
             reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
@@ -310,9 +310,9 @@ def his_level(data):
         # Search for scope of current function
         for scope in data.scopes:
             if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
-                # Search function body and calculate nesting depth                
+                # Search function body and calculate nesting depth
                 token = scope.bodyStart
-                while (token != None and token != scope.bodyEnd):                    
+                while (token != None and token != scope.bodyEnd):
                     if (token.str not in ["if", "switch", "for", "while", "do"]):
                         token = token.next
                         continue
@@ -350,23 +350,22 @@ def his_return(data):
                 if (num_return_points > 1):
                     reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1', 'RETURN')
 
+
+SUPPRESS_METRICS_HELP = '''HIS metrics to suppress (comma-separated)
+
+For example, if you'd like to suppress metrics GOTO, CALLS
+and PARAM run:
+    python his.py --suppress-metrics GOTO,CALLS,PARAM ...
+
+'''
+
 def get_args():
-    parser = cppcheckdata.ArgumentParser()
-
-	# Since Cppcheck version 1.90 some command line options are already handled
-    # by cppcheckdata.ArgumentParser().
-    # Thus check first to avoid conflicts by adding options twice and to make
-    # this script backward compatible. 
-    args, rest = parser.parse_known_args()
-    if not hasattr(args, 'dumpfile'):
-        parser.add_argument("dumpfile", nargs='*', help="Path of dump files from cppcheck")
-    if not hasattr(args, 'quiet'):
-        parser.add_argument('-q', '--quiet', action='store_true', help='do not print "Checking ..." lines')
-    if not hasattr(args, 'cli'):
-        parser.add_argument('--cli', help='Addon is executed from Cppcheck', action='store_true')
-    parser.add_argument('-verify', help=argparse.SUPPRESS, action="store_true")
-    parser.add_argument('--no-summary', help='Hide summary of violations', action="store_true")
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("dumpfile", nargs='*', help="Path of dump files from cppcheck")
+    parser.add_argument("-q", "--quiet", action='store_true', help='do not print "Checking ..." lines')
+    parser.add_argument("-verify", help=argparse.SUPPRESS, action="store_true")
+    parser.add_argument("--suppress-metrics", type=str, help=SUPPRESS_METRICS_HELP)
+    parser.add_argument("--no-summary", help="Hide summary of violations", action="store_true")
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -380,13 +379,20 @@ if __name__ == '__main__':
             print("no input files.")
         sys.exit(0)
 
+    if args.suppress_metrics:
+       suppress_list = args.suppress_metrics.split(',')
+       for idx in range(0, len(suppress_list)):
+            suppress_list[idx] = suppress_list[idx].upper()
+            if suppress_list[idx] in his_stats:
+                his_stats[suppress_list[idx]] = "Suppressed"
+
     num_raw_tokens = 0
     for dumpfile in args.dumpfile:
         if not args.quiet:
             print('Checking %s...' % dumpfile)
 
         data = cppcheckdata.parsedump(dumpfile)
-		
+
         if VERIFY:
             VERIFY_ACTUAL = []
             VERIFY_EXPECTED = []
@@ -399,16 +405,26 @@ if __name__ == '__main__':
         for cfg in data.configurations:
             if (len(data.configurations) > 1) and (not args.quiet):
                 print('Checking %s, config %s...' % (dumpfile, cfg.name))
-            his_comf(cfg, data.rawTokens[num_raw_tokens:])
-            his_path(cfg)
-            his_goto(cfg)
-            his_stcyc(cfg)
-            his_calling(cfg)
-            his_calls(cfg)
-            his_param(cfg)
-            his_stmt(cfg)
-            his_level(cfg)
-            his_return(cfg)
+            if (his_stats["COMF"] != "Suppressed"):
+                his_comf(cfg, data.rawTokens[num_raw_tokens:])
+            if (his_stats["PATH"] != "Suppressed"):
+                his_path(cfg)
+            if (his_stats["GOTO"] != "Suppressed"):
+                his_goto(cfg)
+            if (his_stats["STCYC"] != "Suppressed"):
+                his_stcyc(cfg)
+            if (his_stats["CALLING"] != "Suppressed"):
+                his_calling(cfg)
+            if (his_stats["CALLS"] != "Suppressed"):
+                his_calls(cfg)
+            if (his_stats["PARAM"] != "Suppressed"):
+                his_param(cfg)
+            if (his_stats["STMT"] != "Suppressed"):
+                his_stmt(cfg)
+            if (his_stats["LEVEL"] != "Suppressed"):
+                his_level(cfg)
+            if (his_stats["RETURN"] != "Suppressed"):
+                his_return(cfg)
 
         if VERIFY:
             for expected in VERIFY_EXPECTED:
@@ -426,5 +442,7 @@ if __name__ == '__main__':
         printf("\nSummary of violations\n")
         printf("---------------------\n")
         for key in his_stats:
-            printf("%s: %d\n", key.ljust(10), his_stats[key])
-
+            if (his_stats[key] == "Suppressed"):
+                printf("HIS-%s: %s\n", key.ljust(10), his_stats[key])
+            else:
+                printf("HIS-%s: %d\n", key.ljust(10), his_stats[key])
