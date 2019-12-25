@@ -351,11 +351,11 @@ def his_return(data):
                     reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1', 'RETURN')
 
 
-SUPPRESS_METRICS_HELP = '''HIS metrics to suppress (comma-separated)
+SUPPRESS_METRICS_HELP = '''HIS metrics to suppress (comma-separated).
 
 For example, if you'd like to suppress metrics GOTO, CALLS
-and PARAM run:
-    python his.py --suppress-metrics GOTO,CALLS,PARAM ...
+and PARAM use:
+    --suppress-metrics GOTO,CALLS,PARAM
 
 '''
 
