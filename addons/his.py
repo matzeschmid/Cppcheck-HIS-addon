@@ -12,437 +12,458 @@ import cppcheckdata
 import sys
 import re
 
-VERIFY = ('-verify' in sys.argv)
-VERIFY_EXPECTED = []
-VERIFY_ACTUAL = []
-
-KEYWORDS = {
-    'auto',
-    'break',
-    'case',
-    'char',
-    'const',
-    'continue',
-    'default',
-    'do',
-    'double',
-    'else',
-    'enum',
-    'extern',
-    'float',
-    'for',
-    'goto',
-    'if',
-    'int',
-    'long',
-    'register',
-    'return',
-    'short',
-    'signed',
-    'sizeof',
-    'static',
-    'struct',
-    'switch',
-    'typedef',
-    'union',
-    'unsigned',
-    'void',
-    'volatile',
-    'while'
-}
-
-his_stats = {
-    'COMF'   : 0,
-    'PATH'   : 0,
-    'GOTO'   : 0,
-    'STCYC'  : 0,
-    'CALLING': 0,
-    'CALLS'  : 0,
-    'PARAM'  : 0,
-    'STMT'   : 0,
-    'LEVEL'  : 0,
-    'RETURN' : 0
-}
-
 # Formatted printf like function usable by Python 2.7.x and 3.x code.
 def printf(format, *args):
     sys.stdout.write(format % args)
 
-# Add error report entry
-def reportError(token, severity, msg, id):
-    if VERIFY:
-        VERIFY_ACTUAL.append(str(token.linenr) + ':HIS-' + id)
-    else:
-        try:
-            cppcheckdata.reportError(token, severity, msg, 'HIS', id)
-        except ValueError:
-            sys.stderr.write('[' + token.file + ':' + str(token.linenr) + '] (' + severity + ') ' + msg + ' [HIS-' + id + ']\n')
-        his_stats[id] = his_stats[id] + 1
+# HIS metric checker class
+class HisMetricChecker():
+    # List to store location of expected rule/metric violations.
+    # Used for script verification
+    verify_expected = []
+    # List to store location of actual rule/metric violations.
+    # Used for script verification
+    verify_actual = []
 
-# Is this a function call
-def isFunctionCall(token):
-    if not token.isName:
-        return False
-    if token.str in KEYWORDS:
-        return False
-    if (token.next is None) or token.next.str != '(' or token.next != token.astParent:
-        return False
-    return True
+    # C/C++ keywords
+    keywords = {
+        'auto',
+        'break',
+        'case',
+        'char',
+        'const',
+        'continue',
+        'default',
+        'do',
+        'double',
+        'else',
+        'enum',
+        'extern',
+        'float',
+        'for',
+        'goto',
+        'if',
+        'int',
+        'long',
+        'register',
+        'return',
+        'short',
+        'signed',
+        'sizeof',
+        'static',
+        'struct',
+        'switch',
+        'typedef',
+        'union',
+        'unsigned',
+        'void',
+        'volatile',
+        'while'
+    }
 
-# Does the scope match the function object
-def scopeMatchesFunction(scope, func):
-    ret_val = False
-    if (hasattr(scope, 'function') == True):
-        if (scope.function == func):
+    # Dictionary to store HIS metric violation statistics counter.
+    # If a metric is suppressed this will be stored instead of
+    # counter value.
+    his_stats = {
+        'COMF'   : 0,
+        'PATH'   : 0,
+        'GOTO'   : 0,
+        'STCYC'  : 0,
+        'CALLING': 0,
+        'CALLS'  : 0,
+        'PARAM'  : 0,
+        'STMT'   : 0,
+        'LEVEL'  : 0,
+        'RETURN' : 0
+    }
+
+    # command line arguments
+    args = None
+    # Metric suppression list
+    suppression_list = list()
+
+    # Constructor of His metric checker
+    def __init__(self, args):
+        self.args = args
+
+        # Setup metric suppression list
+        if args.suppress_metrics:
+            self.suppression_list = args.suppress_metrics.split(',')
+            for idx in range(0, len(self.suppression_list)):
+                self.suppression_list[idx] = self.suppression_list[idx].upper()
+                if self.suppression_list[idx] in self.his_stats:
+                    self.his_stats[self.suppression_list[idx]] = "Suppressed"
+
+    # Run the HIS metric check according to command line option settings
+    def run_checks(self):
+        num_raw_tokens = 0
+
+        # Run metric checks for each dump file
+        for dumpfile in self.args.dumpfile:
+            if not self.args.quiet:
+                printf("Checking %s...\n", dumpfile)
+
+            data = cppcheckdata.parsedump(dumpfile)
+
+            if self.args.verify:
+                self.verify_actual = []
+                self.verify_expected = []
+                for token in data.rawTokens:
+                    if token.str.startswith('//') and 'TODO' not in token.str:
+                        for word in token.str[2:].split(' '):
+                            if word.startswith("HIS-"):
+                                self.verify_expected.append(str(token.linenr) + ':' + word)
+
+            for cfg in data.configurations:
+                if (len(data.configurations) > 1) and (not self.args.quiet):
+                    printf("Checking %s, config %s...\n",dumpfile, cfg.name)
+                if (self.his_stats["COMF"] != "Suppressed"):
+                    self.his_comf(cfg, data.rawTokens[num_raw_tokens:])
+                if (self.his_stats["PATH"] != "Suppressed"):
+                    self.his_path(cfg)
+                if (self.his_stats["GOTO"] != "Suppressed"):
+                    self.his_goto(cfg)
+                if (self.his_stats["STCYC"] != "Suppressed"):
+                    self.his_stcyc(cfg)
+                if (self.his_stats["CALLING"] != "Suppressed"):
+                    self.his_calling(cfg)
+                if (self.his_stats["CALLS"] != "Suppressed"):
+                    self.his_calls(cfg)
+                if (self.his_stats["PARAM"] != "Suppressed"):
+                    self.his_param(cfg)
+                if (self.his_stats["STMT"] != "Suppressed"):
+                    self.his_stmt(cfg)
+                if (self.his_stats["LEVEL"] != "Suppressed"):
+                    self.his_level(cfg)
+                if (self.his_stats["RETURN"] != "Suppressed"):
+                    self.his_return(cfg)
+
+            if self.args.verify:
+                for expected in self.verify_expected:
+                    if expected not in self.verify_actual:
+                        printf("Expected but not seen: %s\n",expected)
+                for actual in self.verify_actual:
+                    if actual not in self.verify_expected:
+                        printf("Not expected: %s\n",actual)
+
+            num_raw_tokens = len(data.rawTokens)
+
+        # Print summary if not suppressed by command line
+        if not self.args.no_summary and not self.args.verify:
+            printf("\nSummary of violations\n")
+            printf("---------------------\n")
+            for key in self.his_stats:
+                if (self.his_stats[key] == "Suppressed"):
+                    printf("HIS-%s: %s\n", key.ljust(10), self.his_stats[key])
+                else:
+                    printf("HIS-%s: %d\n", key.ljust(10), self.his_stats[key])
+
+    # Add error report entry
+    def reportError(self, token, severity, msg, id):
+        if self.args.verify:
+            self.verify_actual.append(str(token.linenr) + ':HIS-' + id)
+        else:
+            try:
+                cppcheckdata.reportError(token, severity, msg, 'HIS', id)
+            except ValueError:
+                sys.stderr.write('[' + token.file + ':' + str(token.linenr) + '] (' + severity + ') ' + msg + ' [HIS-' + id + ']\n')
+            self.his_stats[id] = self.his_stats[id] + 1
+
+    # Is this a function call
+    def isFunctionCall(self, token):
+        if not token.isName:
+            return False
+        if token.str in self.keywords:
+            return False
+        if (token.next is None) or token.next.str != '(' or token.next != token.astParent:
+            return False
+        return True
+
+    # Does the scope match the function object
+    def scopeMatchesFunction(self, scope, func):
+        ret_val = False
+        if (hasattr(scope, 'function') == True):
+            if (scope.function == func):
+                ret_val = True
+        elif (scope.className == func.name):
             ret_val = True
-    elif (scope.className == func.name):
-        ret_val = True
 
-    return ret_val
+        return ret_val
 
-# Count line of statements in function
-def numOfFunctionStatements(func, data):
-    num_of_statements = 0
-    for scope in data.scopes:
-        if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
-            token = scope.bodyStart.next
-            current_line_nr = -1
-            # Search function body and count statements
-            while (token != None and token != scope.bodyEnd):
-                # Ignore lines with just a opening or closing curly bracket
-                if (token.str.startswith("{") or token.str.startswith("}")):
-                    if (token.linenr != token.previous.linenr and token.linenr != token.next.linenr):
-                        token = token.next
-                        continue
-                # Make sure to count each line just once
-                if (current_line_nr != token.linenr):
-                    num_of_statements += 1
-                    current_line_nr = token.linenr
-                token = token.next
-    return num_of_statements
-
-# Calculate nesting level of token scope regarding final scope
-def calculateNestingLevel(data, token_scope, final_scope):
-    nesting_level = 0
-    scope = token_scope
-    while (scope != None and scope != final_scope):
-        scope = scope.nestedIn
-        nesting_level += 1
-    return nesting_level
-
-# Determine the number of switch cases
-def numOfSwitchCases(token):
-	num_cases = 0
-	while (token != None and token.str != "{"):
-		token = token.next
-	if (token != None):
-		token_switch_end = token.link
-	while (token != None and token != token_switch_end):
-		if (token.str == "case"):
-			num_cases += 1
-		token = token.next
-	return num_cases
-
-# Determine if "while" keyword belongs to do-while loop
-def isWhileOfDoWhile(token):
-	ret_val = False
-	if (token.str == "while" and token.previous.str == "}" and token.previous.scope.type == "Do"):
-		ret_val = True
-	return ret_val
-
-# HIS-COMF
-# Relationship of comments to number of statements: > 0.2
-def his_comf(data, rawTokens):
-    # Set line of statements initial/minimum value to 1.0
-    # to avoid division by zero.
-    lines_of_statements = 1.0
-    lines_of_comments   = 0.0
-    # Count line of statements in functions
-    for func in data.functions:
-        lines_of_statements += numOfFunctionStatements(func, data)
-
-    # Count line of comments
-    for token in rawTokens:
-        if token.str.startswith("//"):
-            lines_of_comments += 1
-        elif token.str.startswith("/*"):
-            lines_of_comments += (len(re.findall(r'x\s*\*', token.str)) + 1)
-
-    if ((lines_of_comments / lines_of_statements) < 0.2):
-        reportError(rawTokens[0], 'style', 'Relationship of comments to number of statements: > 0.2', 'COMF')
-        printf("    Lines of statements: %d\n", lines_of_statements)
-        printf("    Lines of comments:   %d\n", lines_of_comments)
-        printf("    HIS-COMF:            %.2f\n", lines_of_comments / lines_of_statements)
-
-# HIS-PATH
-# Number of non cyclic remark paths: 1-80
-def his_path(data):
-	for func in data.functions:
-        # Search for scope of current function
-		for scope in data.scopes:
-			if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
-				# Calculate number of non cyclic remark paths for function body
-				num_paths = 1
-				token = scope.bodyStart
-				while (token != None and token != scope.bodyEnd):
-					if (token.str in ["if", "for", "do"]):
-						num_paths *= 2
-					elif (token.str == "while" and isWhileOfDoWhile(token) == False):
-						num_paths *= 2
-					elif (token.str == "switch"):
-						num_paths *= (1 + numOfSwitchCases(token))
-					token = token.next
-				if (num_paths > 80):
-					reportError(func.tokenDef, 'style', 'Number of non cyclic remark paths: 1-80', 'PATH')
-
-# HIS-GOTO
-# Number of goto statements: 0
-def his_goto(data):
-    for token in data.tokenlist:
-        if token.str == "goto":
-            reportError(token, 'style', 'Number of goto Statements should be 0', 'GOTO')
-
-# HIS-STCYC
-# Cyclomatic complexity v(G) of functions by McCabe: 1-10
-def his_stcyc(data):
-	for func in data.functions:
-        # Search for scope of current function
-		for scope in data.scopes:
-			if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
-				# Calculate cyclomatic complexity for function body
-				vG = 0
-				num_nodes = 2
-				num_edges = 1
-				num_components = 1
-				token = scope.bodyStart
-				while (token != None and token != scope.bodyEnd):
-					if (token.str in ["for", "while", "do"]):
-						num_nodes += 3
-						num_edges += 4
-					elif (token.str == "if"):
-						num_nodes += 3
-						num_edges += 4
-					elif (token.str == "else"):
-						num_nodes += 1
-						num_edges += 1
-					elif (token.str == "switch"):
-						num_nodes += 2
-						num_edges += 1
-					elif (token.str in ["case", "default"]):
-						num_nodes += 1
-						num_edges += 2
-					token = token.next
-
-				vG = num_edges - num_nodes + (2 * num_components)
-				#printf("Function name: %s\n", func.name)
-				#printf("edges: %d, nodes: %d, vG: %d\n\n", num_edges, num_nodes, vG);
-				if (vG > 10):
-					reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10', 'STCYC')
-
-# HIS-CALLING
-# Number of subfunctions calling a function: 0-5
-def his_calling(data):
-    funcdict = dict()
-    for func in data.functions:
-        # Add function to dictionary and set called counter to 0
-        funcdict[func] = 0
-    for func in data.functions:
-        # Search for scope of current function
+    # Count line of statements in function
+    def numOfFunctionStatements(self, func, data):
+        num_of_statements = 0
         for scope in data.scopes:
-            if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
-                # Search function body for function calls reduced
-                # by duplicates
-                token = scope.bodyStart
-                called_funcs = list()
+            if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                token = scope.bodyStart.next
+                current_line_nr = -1
+                # Search function body and count statements
                 while (token != None and token != scope.bodyEnd):
-                    if isFunctionCall(token):
-                        if (token.function in funcdict and token.function not in called_funcs):
-                            called_funcs.append(token.function)
+                    # Ignore lines with just a opening or closing curly bracket
+                    if (token.str.startswith("{") or token.str.startswith("}")):
+                        if (token.linenr != token.previous.linenr and token.linenr != token.next.linenr):
+                            token = token.next
+                            continue
+                    # Make sure to count each line just once
+                    if (current_line_nr != token.linenr):
+                        num_of_statements += 1
+                        current_line_nr = token.linenr
                     token = token.next
-                for func_call in called_funcs:
-                    funcdict[func_call] = funcdict[func_call] + 1
-    for func in funcdict:
-        # printf("%s : %d\n", func.name, funcdict[func])
-        if (funcdict[func] > 5):
-            reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5', 'CALLING')
+        return num_of_statements
 
-# HIS-CALLS
-# Number of called functions excluding duplicates: 0-7
-def his_calls(data):
-    for func in data.functions:
-        # Search for scope of current function
-        for scope in data.scopes:
-            if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
-                # Search function body for function calls
-                token = scope.bodyStart
-                func_calls = list()
-                while (token != None and token != scope.bodyEnd and len(func_calls) < 8):
-                    if isFunctionCall(token):
-                        # Don't add duplicates
-                        if (token.str not in func_calls):
-                            func_calls.append(token.str)
-                    token = token.next
-                if (len(func_calls) > 7):
-                    reportError(func.tokenDef, 'style', 'Number of called functions excluding duplicates: 0-7', 'CALLS')
+    # Calculate nesting level of token scope regarding final scope
+    def calculateNestingLevel(self, data, token_scope, final_scope):
+        nesting_level = 0
+        scope = token_scope
+        while (scope != None and scope != final_scope):
+            scope = scope.nestedIn
+            nesting_level += 1
+        return nesting_level
 
-# HIS-PARAM
-# Number of function parameters: 0-5
-def his_param(data):
-    for func in data.functions:
-        # Check number of function parameters
-        if (len(func.argument) > 5):
-            reportError(func.tokenDef, 'style', 'Number of function parameters: 0-5', 'PARAM')
+    # Determine the number of switch cases
+    def numOfSwitchCases(self, token):
+    	num_cases = 0
+    	while (token != None and token.str != "{"):
+    		token = token.next
+    	if (token != None):
+    		token_switch_end = token.link
+    	while (token != None and token != token_switch_end):
+    		if (token.str == "case"):
+    			num_cases += 1
+    		token = token.next
+    	return num_cases
 
-# HIS-STMT
-# Number of statements per function: 1-50
-def his_stmt(data):
-    num_of_statements = 0
-    # Count line of statements in functions
-    for func in data.functions:
-        num_of_statements = numOfFunctionStatements(func, data)
-        if (num_of_statements > 50):
-            reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
+    # Determine if "while" keyword belongs to do-while loop
+    def isWhileOfDoWhile(self, token):
+    	ret_val = False
+    	if (token.str == "while" and token.previous.str == "}" and token.previous.scope.type == "Do"):
+    		ret_val = True
+    	return ret_val
 
-# HIS-LEVEL
-# Depth of nesting of a function: 0-4
-def his_level(data):
-    for func in data.functions:
-        # Search for scope of current function
-        for scope in data.scopes:
-            if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
-                # Search function body and calculate nesting depth
-                token = scope.bodyStart
-                while (token != None and token != scope.bodyEnd):
-                    if (token.str not in ["if", "switch", "for", "while", "do"]):
+    # HIS-COMF
+    # Relationship of comments to number of statements: > 0.2
+    def his_comf(self, data, rawTokens):
+        # Set line of statements initial/minimum value to 1.0
+        # to avoid division by zero.
+        lines_of_statements = 1.0
+        lines_of_comments   = 0.0
+        # Count line of statements in functions
+        for func in data.functions:
+            lines_of_statements += self.numOfFunctionStatements(func, data)
+
+        # Count line of comments
+        for token in rawTokens:
+            if token.str.startswith("//"):
+                lines_of_comments += 1
+            elif token.str.startswith("/*"):
+                lines_of_comments += (len(re.findall(r'x\s*\*', token.str)) + 1)
+
+        if ((lines_of_comments / lines_of_statements) < 0.2):
+            self.reportError(rawTokens[0], 'style', 'Relationship of comments to number of statements: > 0.2', 'COMF')
+            printf("    Lines of statements: %d\n", lines_of_statements)
+            printf("    Lines of comments:   %d\n", lines_of_comments)
+            printf("    HIS-COMF:            %.2f\n", lines_of_comments / lines_of_statements)
+
+    # HIS-PATH
+    # Number of non cyclic remark paths: 1-80
+    def his_path(self, data):
+    	for func in data.functions:
+            # Search for scope of current function
+    		for scope in data.scopes:
+    			if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+    				# Calculate number of non cyclic remark paths for function body
+    				num_paths = 1
+    				token = scope.bodyStart
+    				while (token != None and token != scope.bodyEnd):
+    					if (token.str in ["if", "for", "do"]):
+    						num_paths *= 2
+    					elif (token.str == "while" and self.isWhileOfDoWhile(token) == False):
+    						num_paths *= 2
+    					elif (token.str == "switch"):
+    						num_paths *= (1 + self.numOfSwitchCases(token))
+    					token = token.next
+    				if (num_paths > 80):
+    					self.reportError(func.tokenDef, 'style', 'Number of non cyclic remark paths: 1-80', 'PATH')
+
+    # HIS-GOTO
+    # Number of goto statements: 0
+    def his_goto(self, data):
+        for token in data.tokenlist:
+            if token.str == "goto":
+                self.reportError(token, 'style', 'Number of goto Statements should be 0', 'GOTO')
+
+    # HIS-STCYC
+    # Cyclomatic complexity v(G) of functions by McCabe: 1-10
+    def his_stcyc(self, data):
+    	for func in data.functions:
+            # Search for scope of current function
+    		for scope in data.scopes:
+    			if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+    				# Calculate cyclomatic complexity for function body
+    				vG = 0
+    				num_nodes = 2
+    				num_edges = 1
+    				num_components = 1
+    				token = scope.bodyStart
+    				while (token != None and token != scope.bodyEnd):
+    					if (token.str in ["for", "while", "do"]):
+    						num_nodes += 3
+    						num_edges += 4
+    					elif (token.str == "if"):
+    						num_nodes += 3
+    						num_edges += 4
+    					elif (token.str == "else"):
+    						num_nodes += 1
+    						num_edges += 1
+    					elif (token.str == "switch"):
+    						num_nodes += 2
+    						num_edges += 1
+    					elif (token.str in ["case", "default"]):
+    						num_nodes += 1
+    						num_edges += 2
+    					token = token.next
+
+    				vG = num_edges - num_nodes + (2 * num_components)
+    				#printf("Function name: %s\n", func.name)
+    				#printf("edges: %d, nodes: %d, vG: %d\n\n", num_edges, num_nodes, vG);
+    				if (vG > 10):
+    					self.reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10', 'STCYC')
+
+    # HIS-CALLING
+    # Number of subfunctions calling a function: 0-5
+    def his_calling(self, data):
+        funcdict = dict()
+        for func in data.functions:
+            # Add function to dictionary and set called counter to 0
+            funcdict[func] = 0
+        for func in data.functions:
+            # Search for scope of current function
+            for scope in data.scopes:
+                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                    # Search function body for function calls reduced
+                    # by duplicates
+                    token = scope.bodyStart
+                    called_funcs = list()
+                    while (token != None and token != scope.bodyEnd):
+                        if self.isFunctionCall(token):
+                            if (token.function in funcdict and token.function not in called_funcs):
+                                called_funcs.append(token.function)
                         token = token.next
-                        continue
-                    # Ignore while of do-while loop
-                    if (token.str == "while" and isWhileOfDoWhile(token) == True):
+                    for func_call in called_funcs:
+                        funcdict[func_call] = funcdict[func_call] + 1
+        for func in funcdict:
+            # printf("%s : %d\n", func.name, funcdict[func])
+            if (funcdict[func] > 5):
+                self.reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5', 'CALLING')
+
+    # HIS-CALLS
+    # Number of called functions excluding duplicates: 0-7
+    def his_calls(self, data):
+        for func in data.functions:
+            # Search for scope of current function
+            for scope in data.scopes:
+                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                    # Search function body for function calls
+                    token = scope.bodyStart
+                    func_calls = list()
+                    while (token != None and token != scope.bodyEnd and len(func_calls) < 8):
+                        if self.isFunctionCall(token):
+                            # Don't add duplicates
+                            if (token.str not in func_calls):
+                                func_calls.append(token.str)
                         token = token.next
-                        continue
-                    token_compound_stm = token
-                    # Walk forward through token list until open curly
-                    # bracket of scope has been reached.
-                    while (token != None and token.str != "{"):
+                    if (len(func_calls) > 7):
+                        self.reportError(func.tokenDef, 'style', 'Number of called functions excluding duplicates: 0-7', 'CALLS')
+
+    # HIS-PARAM
+    # Number of function parameters: 0-5
+    def his_param(self, data):
+        for func in data.functions:
+            # Check number of function parameters
+            if (len(func.argument) > 5):
+                self.reportError(func.tokenDef, 'style', 'Number of function parameters: 0-5', 'PARAM')
+
+    # HIS-STMT
+    # Number of statements per function: 1-50
+    def his_stmt(self, data):
+        num_of_statements = 0
+        # Count line of statements in functions
+        for func in data.functions:
+            num_of_statements = self.numOfFunctionStatements(func, data)
+            if (num_of_statements > 50):
+                self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
+
+    # HIS-LEVEL
+    # Depth of nesting of a function: 0-4
+    def his_level(self, data):
+        for func in data.functions:
+            # Search for scope of current function
+            for scope in data.scopes:
+                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                    # Search function body and calculate nesting depth
+                    token = scope.bodyStart
+                    while (token != None and token != scope.bodyEnd):
+                        if (token.str not in ["if", "switch", "for", "while", "do"]):
+                            token = token.next
+                            continue
+                        # Ignore while of do-while loop
+                        if (token.str == "while" and self.isWhileOfDoWhile(token) == True):
+                            token = token.next
+                            continue
+                        token_compound_stm = token
+                        # Walk forward through token list until open curly
+                        # bracket of scope has been reached.
+                        while (token != None and token.str != "{"):
+                            token = token.next
+                        # Calculate nesting level of current scope
+                        if (token != None):
+                            # Nesting level starts at depth 1 for function entry
+                            nesting_level = 1
+                            nesting_level += self.calculateNestingLevel(data, token.scope, scope)
+                            if (nesting_level > 4):
+                                self.reportError(token_compound_stm, 'style', 'Depth of nesting of a function: 0-4', 'LEVEL')
+
+    # HIS-RETURN
+    # Number of return points within a function: 0-1
+    def his_return(self, data):
+        for func in data.functions:
+            # Search for scope of current function
+            for scope in data.scopes:
+                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                    # Search function body for return key word
+                    token = scope.bodyStart
+                    num_return_points = 0
+                    while (token != None and token != scope.bodyEnd and num_return_points < 2):
+                        if (token.str == "return"):
+                            num_return_points += 1
                         token = token.next
-                    # Calculate nesting level of current scope
-                    if (token != None):
-                        # Nesting level starts at depth 1 for function entry
-                        nesting_level = 1
-                        nesting_level += calculateNestingLevel(data, token.scope, scope)
-                        if (nesting_level > 4):
-                            reportError(token_compound_stm, 'style', 'Depth of nesting of a function: 0-4', 'LEVEL')
+                    if (num_return_points > 1):
+                        self.reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1', 'RETURN')
 
-# HIS-RETURN
-# Number of return points within a function: 0-1
-def his_return(data):
-    for func in data.functions:
-        # Search for scope of current function
-        for scope in data.scopes:
-            if (scope.type == "Function") and (scopeMatchesFunction(scope, func) == True):
-                # Search function body for return key word
-                token = scope.bodyStart
-                num_return_points = 0
-                while (token != None and token != scope.bodyEnd and num_return_points < 2):
-                    if (token.str == "return"):
-                        num_return_points += 1
-                    token = token.next
-                if (num_return_points > 1):
-                    reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1', 'RETURN')
+# Main entry function
+def main():
+    SUPPRESS_METRICS_HELP = '''HIS metrics to suppress (comma-separated).
 
+    For example, if you'd like to suppress metrics GOTO, CALLS
+    and PARAM use:
+        --suppress-metrics GOTO,CALLS,PARAM
 
-SUPPRESS_METRICS_HELP = '''HIS metrics to suppress (comma-separated).
+    '''
 
-For example, if you'd like to suppress metrics GOTO, CALLS
-and PARAM use:
-    --suppress-metrics GOTO,CALLS,PARAM
-
-'''
-
-def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("dumpfile", nargs='*', help="Path of dump files from cppcheck")
     parser.add_argument("-q", "--quiet", action='store_true', help='do not print "Checking ..." lines')
     parser.add_argument("-verify", help=argparse.SUPPRESS, action="store_true")
     parser.add_argument("--suppress-metrics", type=str, help=SUPPRESS_METRICS_HELP)
     parser.add_argument("--no-summary", help="Hide summary of violations", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.dumpfile:
+        his_checker = HisMetricChecker(args)
+        his_checker.run_checks()
+    else:
+        if not args.quiet:
+            printf("No input files.\n")
 
 if __name__ == '__main__':
-    args = get_args()
-
-    if args.verify:
-        VERIFY = True
-
-    if not args.dumpfile:
-        if not args.quiet:
-            print("no input files.")
-        sys.exit(0)
-
-    if args.suppress_metrics:
-       suppress_list = args.suppress_metrics.split(',')
-       for idx in range(0, len(suppress_list)):
-            suppress_list[idx] = suppress_list[idx].upper()
-            if suppress_list[idx] in his_stats:
-                his_stats[suppress_list[idx]] = "Suppressed"
-
-    num_raw_tokens = 0
-    for dumpfile in args.dumpfile:
-        if not args.quiet:
-            print('Checking %s...' % dumpfile)
-
-        data = cppcheckdata.parsedump(dumpfile)
-
-        if VERIFY:
-            VERIFY_ACTUAL = []
-            VERIFY_EXPECTED = []
-            for tok in data.rawTokens:
-                if tok.str.startswith('//') and 'TODO' not in tok.str:
-                    for word in tok.str[2:].split(' '):
-                        if word.startswith("HIS-"):
-                            VERIFY_EXPECTED.append(str(tok.linenr) + ':' + word)
-
-        for cfg in data.configurations:
-            if (len(data.configurations) > 1) and (not args.quiet):
-                print('Checking %s, config %s...' % (dumpfile, cfg.name))
-            if (his_stats["COMF"] != "Suppressed"):
-                his_comf(cfg, data.rawTokens[num_raw_tokens:])
-            if (his_stats["PATH"] != "Suppressed"):
-                his_path(cfg)
-            if (his_stats["GOTO"] != "Suppressed"):
-                his_goto(cfg)
-            if (his_stats["STCYC"] != "Suppressed"):
-                his_stcyc(cfg)
-            if (his_stats["CALLING"] != "Suppressed"):
-                his_calling(cfg)
-            if (his_stats["CALLS"] != "Suppressed"):
-                his_calls(cfg)
-            if (his_stats["PARAM"] != "Suppressed"):
-                his_param(cfg)
-            if (his_stats["STMT"] != "Suppressed"):
-                his_stmt(cfg)
-            if (his_stats["LEVEL"] != "Suppressed"):
-                his_level(cfg)
-            if (his_stats["RETURN"] != "Suppressed"):
-                his_return(cfg)
-
-        if VERIFY:
-            for expected in VERIFY_EXPECTED:
-                if expected not in VERIFY_ACTUAL:
-                    print('Expected but not seen: ' + expected)
-                    sys.exit(1)
-            for actual in VERIFY_ACTUAL:
-                if actual not in VERIFY_EXPECTED:
-                    print('Not expected: ' + actual)
-                    sys.exit(1)
-
-        num_raw_tokens = len(data.rawTokens)
-
-    if not args.no_summary and not args.verify:
-        printf("\nSummary of violations\n")
-        printf("---------------------\n")
-        for key in his_stats:
-            if (his_stats[key] == "Suppressed"):
-                printf("HIS-%s: %s\n", key.ljust(10), his_stats[key])
-            else:
-                printf("HIS-%s: %d\n", key.ljust(10), his_stats[key])
+    main()
