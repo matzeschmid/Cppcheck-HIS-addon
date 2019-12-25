@@ -4,7 +4,7 @@ HIS metric python addon for Cppcheck
 This addon has been tested on a machine running 64-bit Ubuntu 19.10 with Cppcheck v1.84 up to latest release v1.90 .
 
 # Supported HIS metric checks
-The follwing metrics are checked according to document `HIS source code metrics v1.3.1` .
+The following metrics are checked according to document `HIS source code metrics v1.3.1` .
 
 | Metric | Description | Range |
 | ------ | ----------- |:-----:|
@@ -18,6 +18,20 @@ The follwing metrics are checked according to document `HIS source code metrics 
 | HIS-STMT | Number of statements per function | 1-50 |
 | HIS-LEVEL | Depth of nesting of a function | 0-4 |
 | HIS-RETURN | Number of return points within a function | 0-1 |
+
+# Missing HIS metric checks
+The following metrics part of document `HIS source code metrics v1.3.1` are not checked yet.
+
+| Metric | Description | Note |
+| ------ | ----------- |:-----:|
+| SI | Stability index | No plans for support |
+| VOCF | Language scope | Might be supported by a future version |
+| NOMV | Number of MISRA HIS Subset violations | No plans for support |
+| NOMVPR | Number of MISRA HIS Subset violations per rule | No plans for support |
+| NRECUR | Number of recursions | Might be supported by a future version |
+| SCHG | Number of changed statements | No plans for support |
+| SDEL | Number of deleted statements | No plans for support |
+| SNEW | Number of new statements | No plans for support |
 
 
 # Installation
