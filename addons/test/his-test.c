@@ -1,22 +1,19 @@
 // HIS-COMF
+// Main test code for HIS metric checkers
 
 #include <stdio.h>
 
-void his_return_none_pass(); // HIS-CALLING
-
-/*
- * To test:
- * ~/cppcheck/cppcheck --dump his-test.c && python ../his.py -verify his-test.c.dump
- */
+void his_return_none_pass();
 
 // Test pattern HIS metric - Number of goto statements: 0
 void his_goto(int param)
 {
     if (param < 0) {
-        goto invalid_param; // HIS-GOTO 
+        goto invalid_param; // HIS-GOTO
     }
     (void)printf("Param: %d", param);
 invalid_param:
+    func_calling1();
     return;
 }
 
@@ -92,6 +89,7 @@ void his_param_num_pass(int p1, int p2, int p3, int p4, int p5)
     (void)p4;
     (void)p5;
     his_return_none_pass();
+    func_calling1();
 }
 
 void his_param_num_fail(int p1, int p2, int p3, int p4, int p5, int p6)    // HIS-PARAM
@@ -103,6 +101,7 @@ void his_param_num_fail(int p1, int p2, int p3, int p4, int p5, int p6)    // HI
     (void)p5;
     (void)p6;
     his_return_none_pass();
+    func_calling1();
 }
 
 // Test pattern HIS metric - Number of return points within a function: 0-1
@@ -112,17 +111,19 @@ void his_return_none_pass()
 
 int his_return_single_pass(int a, int b)
 {
+    func_calling1();
     return a + b;
 }
 
 int his_return_multiple_fail(int a, int b)  // HIS-RETURN
 {
+    func_calling1();
     if (a > b) {
         return a - b;
     }
     else {
         return b - a;
-    }    
+    }
 }
 
 // Test pattern HIS metric - Number of called functions excluding duplicates: 0-7
@@ -151,6 +152,7 @@ void his_calls_fail()   // HIS-CALLS
     (void)printf("World");
     his_goto(0);
     his_calls_pass();
+    func_calling1();
 }
 
 // Test pattern HIS metric - Depth of nesting of a function: 0-4
@@ -189,4 +191,5 @@ void his_level(int x, int y, int z)	// HIS-PATH
         (void)printf("z is less than 1\n");
     }
     his_return_none_pass();
+    func_calling1();
 }

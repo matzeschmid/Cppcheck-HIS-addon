@@ -21,6 +21,7 @@ class HisMetricChecker():
     # List to store location of expected rule/metric violations.
     # Used for script verification
     verify_expected = []
+
     # List to store location of actual rule/metric violations.
     # Used for script verification
     verify_actual = []
@@ -79,8 +80,16 @@ class HisMetricChecker():
 
     # command line arguments
     args = None
+
     # Metric suppression list
     suppression_list = list()
+
+    # Dictionary to store number of times a function
+    # is called from different function scopes.
+    function_calls = dict()
+
+    # List of functions defined in dump file(s)
+    function_list = list()
 
     # Constructor of His metric checker
     def __init__(self, args):
@@ -98,6 +107,8 @@ class HisMetricChecker():
     def run_checks(self):
         num_raw_tokens = 0
 
+        # Remove duplicates from dump file list
+        self.args.dumpfile = list(dict.fromkeys(self.args.dumpfile))
         # Run metric checks for each dump file
         for dumpfile in self.args.dumpfile:
             if not self.args.quiet:
@@ -108,7 +119,7 @@ class HisMetricChecker():
             if self.args.verify:
                 self.verify_actual = []
                 self.verify_expected = []
-                for token in data.rawTokens:
+                for token in data.rawTokens[num_raw_tokens:]:
                     if token.str.startswith('//') and 'TODO' not in token.str:
                         for word in token.str[2:].split(' '):
                             if word.startswith("HIS-"):
@@ -147,6 +158,9 @@ class HisMetricChecker():
                         printf("Not expected: %s\n",actual)
 
             num_raw_tokens = len(data.rawTokens)
+
+        # Check for violations of HIS-CALLING after all dump files have been analyzed.
+        self.his_calling_result()
 
         # Print summary if not suppressed by command line
         if not self.args.no_summary and not self.args.verify:
@@ -332,11 +346,8 @@ class HisMetricChecker():
     # HIS-CALLING
     # Number of subfunctions calling a function: 0-5
     def his_calling(self, data):
-        funcdict = dict()
         for func in data.functions:
-            # Add function to dictionary and set called counter to 0
-            funcdict[func] = 0
-        for func in data.functions:
+            self.function_list.append(func)
             # Search for scope of current function
             for scope in data.scopes:
                 if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
@@ -346,14 +357,18 @@ class HisMetricChecker():
                     called_funcs = list()
                     while (token != None and token != scope.bodyEnd):
                         if self.isFunctionCall(token):
-                            if (token.function in funcdict and token.function not in called_funcs):
-                                called_funcs.append(token.function)
+                            if token.str not in called_funcs:
+                                called_funcs.append(token.str)
+                                if token.str not in self.function_calls:
+                                    self.function_calls[token.str] = 1
+                                else:
+                                    self.function_calls[token.str] = self.function_calls[token.str] + 1
                         token = token.next
-                    for func_call in called_funcs:
-                        funcdict[func_call] = funcdict[func_call] + 1
-        for func in funcdict:
-            # printf("%s : %d\n", func.name, funcdict[func])
-            if (funcdict[func] > 5):
+
+    # HIS-CALLING calculate result
+    def his_calling_result(self):
+        for func in self.function_list:
+            if ((func.name in self.function_calls) and self.function_calls[func.name] > 5):
                 self.reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5', 'CALLING')
 
     # HIS-CALLS
