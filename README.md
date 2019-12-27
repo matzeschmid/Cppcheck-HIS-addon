@@ -1,7 +1,7 @@
 # Cppcheck-HIS-addon
 HIS metric python addon for Cppcheck
 
-This addon has been tested on a machine running 64-bit Ubuntu 19.10 with Cppcheck v1.84 up to latest release v1.90 .
+This addon has been tested on a machine running 64-bit Ubuntu 19.10 with Cppcheck v1.84 up to latest release v1.90 (Python 2.7x as well as 3.7.x).
 
 # Supported HIS metric checks
 The following metrics are checked according to document `HIS source code metrics v1.3.1` .
@@ -39,12 +39,12 @@ The directories are the same as for Cppcheck addons.
 Thus just copy the files to the corresponding directories of Cppcheck installation.
 
 # Usage
-Example how to use HIS addon with HIS metric test pattern file on a Linux machine.
+Example how to use HIS addon with HIS metric test pattern files on a Linux machine.
 
 1. Create a dump file for the source files which are desired to be checked.
 
-   `$> ~/cppcheck/cppcheck --dump ~/cppcheck/cppcheck/addons/test/his-test.c`
+   `$> ~/cppcheck/cppcheck --dump ~/cppcheck/cppcheck/addons/test/his-test.c ~/cppcheck/cppcheck/addons/test/his-test-calling.c`
 
 2. Run HIS metric checker using dump files created during previous step.
 
-   `$> python ~/cppcheck/addons/his.py ~/cppcheck/cppcheck/addons/test/his-test.c.dump`
+   `$> python ~/cppcheck/addons/his.py ~/cppcheck/cppcheck/addons/test/his-test.c.dump ~/cppcheck/cppcheck/addons/test/his-test-calling.c.dump`
