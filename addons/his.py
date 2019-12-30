@@ -103,6 +103,11 @@ class HisMetricChecker():
                 if self.suppression_list[idx] in self.his_stats:
                     self.his_stats[self.suppression_list[idx]] = "Suppressed"
 
+    # Execute metric check if not suppressed
+    def execute_metric_check(self, metric_name, metric_function, *func_args):
+        if (self.his_stats[metric_name] != "Suppressed"):
+            metric_function(*func_args)
+
     # Run the HIS metric check according to command line option settings
     def run_checks(self):
         num_raw_tokens = 0
@@ -128,26 +133,16 @@ class HisMetricChecker():
             for cfg in data.configurations:
                 if (len(data.configurations) > 1) and (not self.args.quiet):
                     printf("Checking %s, config %s...\n",dumpfile, cfg.name)
-                if (self.his_stats["COMF"] != "Suppressed"):
-                    self.his_comf(cfg, data.rawTokens[num_raw_tokens:])
-                if (self.his_stats["PATH"] != "Suppressed"):
-                    self.his_path(cfg)
-                if (self.his_stats["GOTO"] != "Suppressed"):
-                    self.his_goto(cfg)
-                if (self.his_stats["STCYC"] != "Suppressed"):
-                    self.his_stcyc(cfg)
-                if (self.his_stats["CALLING"] != "Suppressed"):
-                    self.his_calling(cfg)
-                if (self.his_stats["CALLS"] != "Suppressed"):
-                    self.his_calls(cfg)
-                if (self.his_stats["PARAM"] != "Suppressed"):
-                    self.his_param(cfg)
-                if (self.his_stats["STMT"] != "Suppressed"):
-                    self.his_stmt(cfg)
-                if (self.his_stats["LEVEL"] != "Suppressed"):
-                    self.his_level(cfg)
-                if (self.his_stats["RETURN"] != "Suppressed"):
-                    self.his_return(cfg)
+                self.execute_metric_check("COMF", self.his_comf, cfg, data.rawTokens[num_raw_tokens:])
+                self.execute_metric_check("PATH", self.his_path, cfg)
+                self.execute_metric_check("GOTO", self.his_goto, cfg)
+                self.execute_metric_check("STCYC", self.his_stcyc, cfg)
+                self.execute_metric_check("CALLING", self.his_calling, cfg)
+                self.execute_metric_check("CALLS", self.his_calls, cfg)
+                self.execute_metric_check("PARAM", self.his_param, cfg)
+                self.execute_metric_check("STMT", self.his_stmt, cfg)
+                self.execute_metric_check("LEVEL", self.his_level, cfg)
+                self.execute_metric_check("RETURN", self.his_return, cfg)
 
             if self.args.verify:
                 for expected in self.verify_expected:
@@ -160,17 +155,19 @@ class HisMetricChecker():
             num_raw_tokens = len(data.rawTokens)
 
         # Check for violations of HIS-CALLING after all dump files have been analyzed.
-        self.his_calling_result()
+        self.execute_metric_check("CALLING", self.his_calling_result)
 
         # Print summary if not suppressed by command line
         if not self.args.no_summary and not self.args.verify:
-            printf("\nSummary of violations\n")
-            printf("---------------------\n")
+            printf("\n---------------------------\n")
+            printf("--- Summary of violations\n")
+            printf("---------------------------\n")
             for key in self.his_stats:
                 if (self.his_stats[key] == "Suppressed"):
                     printf("HIS-%s: %s\n", key.ljust(10), self.his_stats[key])
                 else:
                     printf("HIS-%s: %d\n", key.ljust(10), self.his_stats[key])
+            printf("\n")
 
     # Add error report entry
     def reportError(self, token, severity, msg, id):
