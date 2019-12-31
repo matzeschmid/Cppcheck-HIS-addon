@@ -91,6 +91,9 @@ class HisMetricChecker():
     # List of functions defined in dump file(s)
     function_list = list()
 
+    # list of statistics output
+    statistics_list = list()
+
     # Constructor of His metric checker
     def __init__(self, args):
         self.args = args
@@ -119,6 +122,7 @@ class HisMetricChecker():
             if not self.args.quiet:
                 printf("Checking %s...\n", dumpfile)
 
+            self.statistics_list.append(dumpfile)
             data = cppcheckdata.parsedump(dumpfile)
 
             if self.args.verify:
@@ -167,6 +171,14 @@ class HisMetricChecker():
                     printf("HIS-%s: %s\n", key.ljust(10), self.his_stats[key])
                 else:
                     printf("HIS-%s: %d\n", key.ljust(10), self.his_stats[key])
+            printf("\n")
+
+        if self.args.statistics and not self.args.verify:
+            printf("\n---------------------------\n")
+            printf("--- Statistics information\n")
+            printf("---------------------------\n")
+            for item in self.statistics_list:
+                printf("%s\n", item)
             printf("\n")
 
     # Add error report entry
@@ -269,32 +281,33 @@ class HisMetricChecker():
             elif token.str.startswith("/*"):
                 lines_of_comments += (len(re.findall(r'x\s*\*', token.str)) + 1)
 
+        self.statistics_list.append("Lines of statements: %d" % lines_of_statements)
+        self.statistics_list.append("Lines of comments:   %d" % lines_of_comments)
+        self.statistics_list.append("HIS-COMF:            %.2f" % (lines_of_comments / lines_of_statements))
         if ((lines_of_comments / lines_of_statements) < 0.2):
             self.reportError(rawTokens[0], 'style', 'Relationship of comments to number of statements: > 0.2', 'COMF')
-            printf("    Lines of statements: %d\n", lines_of_statements)
-            printf("    Lines of comments:   %d\n", lines_of_comments)
-            printf("    HIS-COMF:            %.2f\n", lines_of_comments / lines_of_statements)
 
     # HIS-PATH
     # Number of non cyclic remark paths: 1-80
     def his_path(self, data):
-    	for func in data.functions:
+        for func in data.functions:
             # Search for scope of current function
-    		for scope in data.scopes:
-    			if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
-    				# Calculate number of non cyclic remark paths for function body
-    				num_paths = 1
-    				token = scope.bodyStart
-    				while (token != None and token != scope.bodyEnd):
-    					if (token.str in ["if", "for", "do"]):
-    						num_paths *= 2
-    					elif (token.str == "while" and self.isWhileOfDoWhile(token) == False):
-    						num_paths *= 2
-    					elif (token.str == "switch"):
-    						num_paths *= (1 + self.numOfSwitchCases(token))
-    					token = token.next
-    				if (num_paths > 80):
-    					self.reportError(func.tokenDef, 'style', 'Number of non cyclic remark paths: 1-80', 'PATH')
+            for scope in data.scopes:
+                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                    # Calculate number of non cyclic remark paths for function body
+                    num_paths = 1
+                    token = scope.bodyStart
+                    while (token != None and token != scope.bodyEnd):
+                        if (token.str in ["if", "for", "do"]):
+                            num_paths *= 2
+                        elif (token.str == "while" and self.isWhileOfDoWhile(token) == False):
+                            num_paths *= 2
+                        elif (token.str == "switch"):
+                            num_paths *= (1 + self.numOfSwitchCases(token))
+                        token = token.next
+                    self.statistics_list.append("HIS-PATH  - %s: %d" % (func.name.ljust(50), num_paths))
+                    if (num_paths > 80):
+                        self.reportError(func.tokenDef, 'style', 'Number of non cyclic remark paths: 1-80', 'PATH')
 
     # HIS-GOTO
     # Number of goto statements: 0
@@ -306,39 +319,37 @@ class HisMetricChecker():
     # HIS-STCYC
     # Cyclomatic complexity v(G) of functions by McCabe: 1-10
     def his_stcyc(self, data):
-    	for func in data.functions:
+        for func in data.functions:
             # Search for scope of current function
-    		for scope in data.scopes:
-    			if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
-    				# Calculate cyclomatic complexity for function body
-    				vG = 0
-    				num_nodes = 2
-    				num_edges = 1
-    				num_components = 1
-    				token = scope.bodyStart
-    				while (token != None and token != scope.bodyEnd):
-    					if (token.str in ["for", "while", "do"]):
-    						num_nodes += 3
-    						num_edges += 4
-    					elif (token.str == "if"):
-    						num_nodes += 3
-    						num_edges += 4
-    					elif (token.str == "else"):
-    						num_nodes += 1
-    						num_edges += 1
-    					elif (token.str == "switch"):
-    						num_nodes += 2
-    						num_edges += 1
-    					elif (token.str in ["case", "default"]):
-    						num_nodes += 1
-    						num_edges += 2
-    					token = token.next
-
-    				vG = num_edges - num_nodes + (2 * num_components)
-    				#printf("Function name: %s\n", func.name)
-    				#printf("edges: %d, nodes: %d, vG: %d\n\n", num_edges, num_nodes, vG);
-    				if (vG > 10):
-    					self.reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10', 'STCYC')
+            for scope in data.scopes:
+                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                    # Calculate cyclomatic complexity for function body
+                    vG = 0
+                    num_nodes = 2
+                    num_edges = 1
+                    num_components = 1
+                    token = scope.bodyStart
+                    while (token != None and token != scope.bodyEnd):
+                        if (token.str in ["for", "while", "do"]):
+                            num_nodes += 3
+                            num_edges += 4
+                        elif (token.str == "if"):
+                            num_nodes += 3
+                            num_edges += 4
+                        elif (token.str == "else"):
+                            num_nodes += 1
+                            num_edges += 1
+                        elif (token.str == "switch"):
+                            num_nodes += 2
+                            num_edges += 1
+                        elif (token.str in ["case", "default"]):
+                            num_nodes += 1
+                            num_edges += 2
+                        token = token.next
+                    vG = num_edges - num_nodes + (2 * num_components)
+                    self.statistics_list.append("HIS-STCYC - %s: %d (edges: %d, nodes: %d)" % (func.name.ljust(50), vG, num_edges, num_nodes))
+                    if (vG > 10):
+                        self.reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10', 'STCYC')
 
     # HIS-CALLING
     # Number of subfunctions calling a function: 0-5
@@ -402,6 +413,7 @@ class HisMetricChecker():
         # Count line of statements in functions
         for func in data.functions:
             num_of_statements = self.numOfFunctionStatements(func, data)
+            self.statistics_list.append("HIS-STMT  - %s: %d" % (func.name.ljust(50), num_of_statements))
             if (num_of_statements > 50):
                 self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
 
@@ -468,6 +480,7 @@ def main():
     parser.add_argument("-verify", help=argparse.SUPPRESS, action="store_true")
     parser.add_argument("--suppress-metrics", type=str, help=SUPPRESS_METRICS_HELP)
     parser.add_argument("--no-summary", help="Hide summary of violations", action="store_true")
+    parser.add_argument("--statistics", help="Show statistics information", action="store_true")
     args = parser.parse_args()
 
     if args.dumpfile:
