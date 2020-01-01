@@ -106,6 +106,16 @@ class HisMetricChecker():
                 if self.suppression_list[idx] in self.his_stats:
                     self.his_stats[self.suppression_list[idx]] = "Suppressed"
 
+    # Object representation
+    def __repr__(self):
+        attrs = ["verify_expected", "verify_actual", "keywords", "his_stats",
+                 "args", "suppression_list", "function_calls", "function_list",
+                 "statistics_list"]
+        return "{}({})".format(
+            "HisMetricChecker",
+            ", ".join(("{}={}".format(a, repr(getattr(self, a))) for a in attrs))
+        )
+
     # Execute metric check if not suppressed
     def execute_metric_check(self, metric_name, metric_function, *func_args):
         if (self.his_stats[metric_name] != "Suppressed"):
