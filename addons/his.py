@@ -12,9 +12,11 @@ import cppcheckdata
 import sys
 import re
 
+
 # Formatted printf like function usable by Python 2.7.x and 3.x code.
 def printf(format, *args):
     sys.stdout.write(format % args)
+
 
 # HIS metric checker class
 class HisMetricChecker():
@@ -161,10 +163,10 @@ class HisMetricChecker():
             if self.args.verify:
                 for expected in self.verify_expected:
                     if expected not in self.verify_actual:
-                        printf("Expected but not seen: %s\n",expected)
+                        printf("Expected but not seen: %s\n", expected)
                 for actual in self.verify_actual:
                     if actual not in self.verify_expected:
-                        printf("Not expected: %s\n",actual)
+                        printf("Not expected: %s\n", actual)
 
             num_raw_tokens = len(data.rawTokens)
 
@@ -199,7 +201,9 @@ class HisMetricChecker():
             try:
                 cppcheckdata.reportError(token, severity, msg, 'HIS', id)
             except ValueError:
-                sys.stderr.write('[' + token.file + ':' + str(token.linenr) + '] (' + severity + ') ' + msg + ' [HIS-' + id + ']\n')
+                sys.stderr.write('[' + token.file + ':' + str(token.linenr) +
+                                 '] (' + severity + ') ' + msg + ' [HIS-' + id +
+                                 ']\n')
             self.his_stats[id] = self.his_stats[id] + 1
 
     # Is this a function call
@@ -255,23 +259,24 @@ class HisMetricChecker():
 
     # Determine the number of switch cases
     def numOfSwitchCases(self, token):
-    	num_cases = 0
-    	while (token != None and token.str != "{"):
-    		token = token.next
-    	if (token != None):
-    		token_switch_end = token.link
-    	while (token != None and token != token_switch_end):
-    		if (token.str == "case"):
-    			num_cases += 1
-    		token = token.next
-    	return num_cases
+        num_cases = 0
+        while (token != None and token.str != "{"):
+            token = token.next
+        if (token != None):
+            token_switch_end = token.link
+        while (token != None and token != token_switch_end):
+            if (token.str == "case"):
+                num_cases += 1
+            token = token.next
+        return num_cases
 
     # Determine if "while" keyword belongs to do-while loop
     def isWhileOfDoWhile(self, token):
-    	ret_val = False
-    	if (token.str == "while" and token.previous.str == "}" and token.previous.scope.type == "Do"):
-    		ret_val = True
-    	return ret_val
+        ret_val = False
+        if (token.str == "while" and token.previous.str == "}"
+                and token.previous.scope.type == "Do"):
+            ret_val = True
+        return ret_val
 
     # HIS-COMF
     # Relationship of comments to number of statements: > 0.2
@@ -279,7 +284,7 @@ class HisMetricChecker():
         # Set line of statements initial/minimum value to 1.0
         # to avoid division by zero.
         lines_of_statements = 1.0
-        lines_of_comments   = 0.0
+        lines_of_comments = 0.0
         # Count line of statements in functions
         for func in data.functions:
             lines_of_statements += self.numOfFunctionStatements(func, data)
@@ -499,6 +504,7 @@ def main():
     else:
         if not args.quiet:
             printf("No input files.\n")
+
 
 if __name__ == '__main__':
     main()
