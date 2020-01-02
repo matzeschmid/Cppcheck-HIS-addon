@@ -77,7 +77,8 @@ class HisMetricChecker():
         'PARAM'  : 0,
         'STMT'   : 0,
         'LEVEL'  : 0,
-        'RETURN' : 0
+        'RETURN' : 0,
+        'NRECUR' : 0
     }
 
     # command line arguments
@@ -95,6 +96,10 @@ class HisMetricChecker():
 
     # list of statistics output
     statistics_list = list()
+
+    # Dictionary to store list of functions called by
+    # function referenced by key
+    functions_called = dict()
 
     # Constructor of His metric checker
     def __init__(self, args):
@@ -172,6 +177,8 @@ class HisMetricChecker():
 
         # Check for violations of HIS-CALLING after all dump files have been analyzed.
         self.execute_metric_check("CALLING", self.his_calling_result)
+        # Check for violations of HIS-NRECUR after all dump files have been analyzed.
+        self.execute_metric_check("NRECUR", self.his_num_recursions)
 
         # Print summary if not suppressed by command line
         if not self.args.no_summary and not self.args.verify:
@@ -403,12 +410,13 @@ class HisMetricChecker():
                     # Search function body for function calls
                     token = scope.bodyStart
                     func_calls = list()
-                    while token is not None and token != scope.bodyEnd and len(func_calls) < 8:
+                    while token is not None and token != scope.bodyEnd:
                         if self.isFunctionCall(token):
                             # Don't add duplicates
                             if token.str not in func_calls:
                                 func_calls.append(token.str)
                         token = token.next
+                    self.functions_called[func.name] = func_calls
                     if len(func_calls) > 7:
                         self.reportError(func.tokenDef, 'style', 'Number of called functions excluding duplicates: 0-7', 'CALLS')
 
@@ -477,6 +485,36 @@ class HisMetricChecker():
                         token = token.next
                     if num_return_points > 1:
                         self.reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1', 'RETURN')
+
+    # Check call path if there is a recursive call to function given by func_name
+    def isRecursiveFunctionCall(self, function_name, called_function_name, called_functions_done):
+        # Skip if check for called function has already been done
+        if called_function_name in called_functions_done:
+            return
+        # Skip if function declaration is not part of given dump file
+        if called_function_name not in self.functions_called:
+            return
+        # Compare names to check for recursive function call
+        if function_name == called_function_name:
+            for func in self.function_list:
+                if func.name == function_name:
+                    self.reportError(func.tokenDef, 'style', 'Number of recursions: 0', 'NRECUR')
+            return
+        else:
+            # Register called function name as done
+            called_functions_done.append(called_function_name)
+            # Run check for next function call level
+            for func_call in self.functions_called[called_function_name]:
+                self.isRecursiveFunctionCall(function_name, func_call, called_functions_done)
+
+    # HIS-NRECUR
+    # Number of recursions: 0
+    def his_num_recursions(self):
+        for func_name in self.functions_called:
+            called_functions_done = list()
+            for func_call in self.functions_called[func_name]:
+                self.isRecursiveFunctionCall(func_name, func_call, called_functions_done)
+
 
 # Main entry function
 def main():
