@@ -120,7 +120,7 @@ class HisMetricChecker():
 
     # Execute metric check if not suppressed
     def execute_metric_check(self, metric_name, metric_function, *func_args):
-        if (self.his_stats[metric_name] != "Suppressed"):
+        if self.his_stats[metric_name] != "Suppressed":
             metric_function(*func_args)
 
     # Run the HIS metric check according to command line option settings
@@ -147,7 +147,7 @@ class HisMetricChecker():
                                 self.verify_expected.append(str(token.linenr) + ':' + word)
 
             for cfg in data.configurations:
-                if (len(data.configurations) > 1) and (not self.args.quiet):
+                if len(data.configurations) > 1 and not self.args.quiet:
                     printf("Checking %s, config %s...\n",dumpfile, cfg.name)
                 self.execute_metric_check("COMF", self.his_comf, cfg, data.rawTokens[num_raw_tokens:])
                 self.execute_metric_check("PATH", self.his_path, cfg)
@@ -212,17 +212,17 @@ class HisMetricChecker():
             return False
         if token.str in self.keywords:
             return False
-        if (token.next is None) or token.next.str != '(' or token.next != token.astParent:
+        if token.next is None or token.next.str != '(' or token.next != token.astParent:
             return False
         return True
 
     # Does the scope match the function object
     def scopeMatchesFunction(self, scope, func):
         ret_val = False
-        if (hasattr(scope, 'function') == True):
-            if (scope.function == func):
+        if hasattr(scope, 'function'):
+            if scope.function == func:
                 ret_val = True
-        elif (scope.className == func.name):
+        elif scope.className == func.name:
             ret_val = True
 
         return ret_val
@@ -231,18 +231,18 @@ class HisMetricChecker():
     def numOfFunctionStatements(self, func, data):
         num_of_statements = 0
         for scope in data.scopes:
-            if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+            if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
                 token = scope.bodyStart.next
                 current_line_nr = -1
                 # Search function body and count statements
-                while (token != None and token != scope.bodyEnd):
+                while token is not None and token != scope.bodyEnd:
                     # Ignore lines with just a opening or closing curly bracket
-                    if (token.str.startswith("{") or token.str.startswith("}")):
-                        if (token.linenr != token.previous.linenr and token.linenr != token.next.linenr):
+                    if token.str.startswith("{") or token.str.startswith("}"):
+                        if token.linenr != token.previous.linenr and token.linenr != token.next.linenr:
                             token = token.next
                             continue
                     # Make sure to count each line just once
-                    if (current_line_nr != token.linenr):
+                    if current_line_nr != token.linenr:
                         num_of_statements += 1
                         current_line_nr = token.linenr
                     token = token.next
@@ -252,7 +252,7 @@ class HisMetricChecker():
     def calculateNestingLevel(self, data, token_scope, final_scope):
         nesting_level = 0
         scope = token_scope
-        while (scope != None and scope != final_scope):
+        while scope is not None and scope != final_scope:
             scope = scope.nestedIn
             nesting_level += 1
         return nesting_level
@@ -260,12 +260,12 @@ class HisMetricChecker():
     # Determine the number of switch cases
     def numOfSwitchCases(self, token):
         num_cases = 0
-        while (token != None and token.str != "{"):
+        while token is not None and token.str != "{":
             token = token.next
-        if (token != None):
+        if token is not None:
             token_switch_end = token.link
-        while (token != None and token != token_switch_end):
-            if (token.str == "case"):
+        while token is not None and token != token_switch_end:
+            if token.str == "case":
                 num_cases += 1
             token = token.next
         return num_cases
@@ -273,8 +273,7 @@ class HisMetricChecker():
     # Determine if "while" keyword belongs to do-while loop
     def isWhileOfDoWhile(self, token):
         ret_val = False
-        if (token.str == "while" and token.previous.str == "}"
-                and token.previous.scope.type == "Do"):
+        if token.str == "while" and token.previous.str == "}" and token.previous.scope.type == "Do":
             ret_val = True
         return ret_val
 
@@ -299,7 +298,7 @@ class HisMetricChecker():
         self.statistics_list.append("Lines of statements: %d" % lines_of_statements)
         self.statistics_list.append("Lines of comments:   %d" % lines_of_comments)
         self.statistics_list.append("HIS-COMF:            %.2f" % (lines_of_comments / lines_of_statements))
-        if ((lines_of_comments / lines_of_statements) < 0.2):
+        if (lines_of_comments / lines_of_statements) < 0.2:
             self.reportError(rawTokens[0], 'style', 'Relationship of comments to number of statements: > 0.2', 'COMF')
 
     # HIS-PATH
@@ -308,20 +307,20 @@ class HisMetricChecker():
         for func in data.functions:
             # Search for scope of current function
             for scope in data.scopes:
-                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
                     # Calculate number of non cyclic remark paths for function body
                     num_paths = 1
                     token = scope.bodyStart
-                    while (token != None and token != scope.bodyEnd):
-                        if (token.str in ["if", "for", "do"]):
+                    while token is not None and token != scope.bodyEnd:
+                        if token.str in ["if", "for", "do"]:
                             num_paths *= 2
-                        elif (token.str == "while" and self.isWhileOfDoWhile(token) == False):
+                        elif token.str == "while" and not self.isWhileOfDoWhile(token):
                             num_paths *= 2
-                        elif (token.str == "switch"):
+                        elif token.str == "switch":
                             num_paths *= (1 + self.numOfSwitchCases(token))
                         token = token.next
                     self.statistics_list.append("HIS-PATH  - %s: %d" % (func.name.ljust(50), num_paths))
-                    if (num_paths > 80):
+                    if num_paths > 80:
                         self.reportError(func.tokenDef, 'style', 'Number of non cyclic remark paths: 1-80', 'PATH')
 
     # HIS-GOTO
@@ -337,33 +336,33 @@ class HisMetricChecker():
         for func in data.functions:
             # Search for scope of current function
             for scope in data.scopes:
-                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
                     # Calculate cyclomatic complexity for function body
                     vG = 0
                     num_nodes = 2
                     num_edges = 1
                     num_components = 1
                     token = scope.bodyStart
-                    while (token != None and token != scope.bodyEnd):
-                        if (token.str in ["for", "while", "do"]):
+                    while token is not None and token != scope.bodyEnd:
+                        if token.str in ["for", "while", "do"]:
                             num_nodes += 3
                             num_edges += 4
-                        elif (token.str == "if"):
+                        elif token.str == "if":
                             num_nodes += 3
                             num_edges += 4
-                        elif (token.str == "else"):
+                        elif token.str == "else":
                             num_nodes += 1
                             num_edges += 1
-                        elif (token.str == "switch"):
+                        elif token.str == "switch":
                             num_nodes += 2
                             num_edges += 1
-                        elif (token.str in ["case", "default"]):
+                        elif token.str in ["case", "default"]:
                             num_nodes += 1
                             num_edges += 2
                         token = token.next
                     vG = num_edges - num_nodes + (2 * num_components)
                     self.statistics_list.append("HIS-STCYC - %s: %d (edges: %d, nodes: %d)" % (func.name.ljust(50), vG, num_edges, num_nodes))
-                    if (vG > 10):
+                    if vG > 10:
                         self.reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10', 'STCYC')
 
     # HIS-CALLING
@@ -373,12 +372,12 @@ class HisMetricChecker():
             self.function_list.append(func)
             # Search for scope of current function
             for scope in data.scopes:
-                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
                     # Search function body for function calls reduced
                     # by duplicates
                     token = scope.bodyStart
                     called_funcs = list()
-                    while (token != None and token != scope.bodyEnd):
+                    while token is not None and token != scope.bodyEnd:
                         if self.isFunctionCall(token):
                             if token.str not in called_funcs:
                                 called_funcs.append(token.str)
@@ -391,7 +390,7 @@ class HisMetricChecker():
     # HIS-CALLING calculate result
     def his_calling_result(self):
         for func in self.function_list:
-            if ((func.name in self.function_calls) and self.function_calls[func.name] > 5):
+            if func.name in self.function_calls and self.function_calls[func.name] > 5:
                 self.reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5', 'CALLING')
 
     # HIS-CALLS
@@ -400,17 +399,17 @@ class HisMetricChecker():
         for func in data.functions:
             # Search for scope of current function
             for scope in data.scopes:
-                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
                     # Search function body for function calls
                     token = scope.bodyStart
                     func_calls = list()
-                    while (token != None and token != scope.bodyEnd and len(func_calls) < 8):
+                    while token is not None and token != scope.bodyEnd and len(func_calls) < 8:
                         if self.isFunctionCall(token):
                             # Don't add duplicates
-                            if (token.str not in func_calls):
+                            if token.str not in func_calls:
                                 func_calls.append(token.str)
                         token = token.next
-                    if (len(func_calls) > 7):
+                    if len(func_calls) > 7:
                         self.reportError(func.tokenDef, 'style', 'Number of called functions excluding duplicates: 0-7', 'CALLS')
 
     # HIS-PARAM
@@ -418,7 +417,7 @@ class HisMetricChecker():
     def his_param(self, data):
         for func in data.functions:
             # Check number of function parameters
-            if (len(func.argument) > 5):
+            if len(func.argument) > 5:
                 self.reportError(func.tokenDef, 'style', 'Number of function parameters: 0-5', 'PARAM')
 
     # HIS-STMT
@@ -429,7 +428,7 @@ class HisMetricChecker():
         for func in data.functions:
             num_of_statements = self.numOfFunctionStatements(func, data)
             self.statistics_list.append("HIS-STMT  - %s: %d" % (func.name.ljust(50), num_of_statements))
-            if (num_of_statements > 50):
+            if num_of_statements > 50:
                 self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
 
     # HIS-LEVEL
@@ -438,28 +437,28 @@ class HisMetricChecker():
         for func in data.functions:
             # Search for scope of current function
             for scope in data.scopes:
-                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
                     # Search function body and calculate nesting depth
                     token = scope.bodyStart
-                    while (token != None and token != scope.bodyEnd):
-                        if (token.str not in ["if", "switch", "for", "while", "do"]):
+                    while token is not None and token != scope.bodyEnd:
+                        if token.str not in ["if", "switch", "for", "while", "do"]:
                             token = token.next
                             continue
                         # Ignore while of do-while loop
-                        if (token.str == "while" and self.isWhileOfDoWhile(token) == True):
+                        if token.str == "while" and self.isWhileOfDoWhile(token):
                             token = token.next
                             continue
                         token_compound_stm = token
                         # Walk forward through token list until open curly
                         # bracket of scope has been reached.
-                        while (token != None and token.str != "{"):
+                        while token is not None and token.str != "{":
                             token = token.next
                         # Calculate nesting level of current scope
-                        if (token != None):
+                        if token is not None:
                             # Nesting level starts at depth 1 for function entry
                             nesting_level = 1
                             nesting_level += self.calculateNestingLevel(data, token.scope, scope)
-                            if (nesting_level > 4):
+                            if nesting_level > 4:
                                 self.reportError(token_compound_stm, 'style', 'Depth of nesting of a function: 0-4', 'LEVEL')
 
     # HIS-RETURN
@@ -468,15 +467,15 @@ class HisMetricChecker():
         for func in data.functions:
             # Search for scope of current function
             for scope in data.scopes:
-                if (scope.type == "Function") and (self.scopeMatchesFunction(scope, func) == True):
+                if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
                     # Search function body for return key word
                     token = scope.bodyStart
                     num_return_points = 0
-                    while (token != None and token != scope.bodyEnd and num_return_points < 2):
-                        if (token.str == "return"):
+                    while token is not None and token != scope.bodyEnd and num_return_points < 2:
+                        if token.str == "return":
                             num_return_points += 1
                         token = token.next
-                    if (num_return_points > 1):
+                    if num_return_points > 1:
                         self.reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1', 'RETURN')
 
 # Main entry function
@@ -491,7 +490,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("dumpfile", nargs='*', help="Path of dump files from cppcheck")
-    parser.add_argument("-q", "--quiet", action='store_true', help='do not print "Checking ..." lines')
+    parser.add_argument("-q", "--quiet", action="store_true", help='do not print "Checking ..." lines')
     parser.add_argument("-verify", help=argparse.SUPPRESS, action="store_true")
     parser.add_argument("--suppress-metrics", type=str, help=SUPPRESS_METRICS_HELP)
     parser.add_argument("--no-summary", help="Hide summary of violations", action="store_true")
