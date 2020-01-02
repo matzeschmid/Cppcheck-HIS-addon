@@ -18,25 +18,25 @@ The following metrics are checked according to document `HIS source code metrics
 | HIS-STMT | Number of statements per function | 1-50 |
 | HIS-LEVEL | Depth of nesting of a function | 0-4 |
 | HIS-RETURN | Number of return points within a function | 0-1 |
+| HIS-NRECUR | Number of recursions | 0 |
 
 # Missing HIS metric checks
 The following metrics part of document `HIS source code metrics v1.3.1` are not checked yet.
 
 | Metric | Description | Note |
 | ------ | ----------- |:-----:|
-| SI | Stability index | No plans for support |
-| VOCF | Language scope | Might be supported by a future version |
-| NOMV | Number of MISRA HIS Subset violations | No plans for support |
-| NOMVPR | Number of MISRA HIS Subset violations per rule | No plans for support |
-| NRECUR | Number of recursions | Might be supported by a future version |
-| SCHG | Number of changed statements | No plans for support |
-| SDEL | Number of deleted statements | No plans for support |
-| SNEW | Number of new statements | No plans for support |
+| HIS-SI | Stability index | No support planned |
+| HIS-VOCF | Language scope | Might be supported by a future version |
+| HIS-NOMV | Number of MISRA HIS Subset violations | No support planned |
+| HIS-NOMVPR | Number of MISRA HIS Subset violations per rule | No support planned |
+| HIS-SCHG | Number of changed statements | No support planned |
+| HIS-SDEL | Number of deleted statements | No support planned |
+| HIS-SNEW | Number of new statements | No support planned |
 
 
 # Installation
-The directories are the same as for Cppcheck addons.
-Thus just copy the files to the corresponding directories of Cppcheck installation.
+Directories are the same as for Cppcheck addons.
+Just copy `his.py` to corresponding directory of Cppcheck installation.
 
 # Usage
 Example how to use HIS addon with HIS metric test pattern files on a Linux machine.
