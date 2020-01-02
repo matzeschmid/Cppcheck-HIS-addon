@@ -175,6 +175,8 @@ class HisMetricChecker():
 
             num_raw_tokens = len(data.rawTokens)
 
+        if not self.args.quiet:
+            printf("Checking metrics impacted by all dump files...\n")
         # Check for violations of HIS-CALLING after all dump files have been analyzed.
         self.execute_metric_check("CALLING", self.his_calling_result)
         # Check for violations of HIS-NRECUR after all dump files have been analyzed.
@@ -527,12 +529,12 @@ def main():
     '''
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("dumpfile", nargs='*', help="Path of dump files from cppcheck")
+    parser.add_argument("dumpfile", nargs='*', help="dump file from cppcheck")
     parser.add_argument("-q", "--quiet", action="store_true", help='do not print "Checking ..." lines')
     parser.add_argument("-verify", help=argparse.SUPPRESS, action="store_true")
     parser.add_argument("--suppress-metrics", type=str, help=SUPPRESS_METRICS_HELP)
-    parser.add_argument("--no-summary", help="Hide summary of violations", action="store_true")
-    parser.add_argument("--statistics", help="Show statistics information", action="store_true")
+    parser.add_argument("--no-summary", help="hide summary of violations", action="store_true")
+    parser.add_argument("--statistics", help="show statistics information", action="store_true")
     args = parser.parse_args()
 
     if args.dumpfile:
