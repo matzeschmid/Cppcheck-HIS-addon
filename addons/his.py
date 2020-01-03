@@ -138,18 +138,14 @@ class HisMetricChecker():
         for dumpfile in self.args.dumpfile:
             if not self.args.quiet:
                 printf("Checking %s...\n", dumpfile)
-
             self.statistics_list.append(dumpfile)
             data = cppcheckdata.parsedump(dumpfile)
-
             if self.args.verify:
-                self.verify_actual = []
-                self.verify_expected = []
                 for token in data.rawTokens[num_raw_tokens:]:
                     if token.str.startswith('//') and 'TODO' not in token.str:
                         for word in token.str[2:].split(' '):
                             if word.startswith("HIS-"):
-                                self.verify_expected.append(str(token.linenr) + ':' + word)
+                                self.verify_expected.append(token.file + ':' + str(token.linenr) + ':' + word)
 
             for cfg in data.configurations:
                 if len(data.configurations) > 1 and not self.args.quiet:
@@ -164,23 +160,22 @@ class HisMetricChecker():
                 self.execute_metric_check("STMT", self.his_stmt, cfg)
                 self.execute_metric_check("LEVEL", self.his_level, cfg)
                 self.execute_metric_check("RETURN", self.his_return, cfg)
-
-            if self.args.verify:
-                for expected in self.verify_expected:
-                    if expected not in self.verify_actual:
-                        printf("Expected but not seen: %s\n", expected)
-                for actual in self.verify_actual:
-                    if actual not in self.verify_expected:
-                        printf("Not expected: %s\n", actual)
-
             num_raw_tokens = len(data.rawTokens)
 
         if not self.args.quiet:
-            printf("Checking metrics impacted by all dump files...\n")
+            printf("Checking metrics for all dump files...\n")
         # Check for violations of HIS-CALLING after all dump files have been analyzed.
         self.execute_metric_check("CALLING", self.his_calling_result)
         # Check for violations of HIS-NRECUR after all dump files have been analyzed.
         self.execute_metric_check("NRECUR", self.his_num_recursions)
+
+        if self.args.verify:
+            for expected in self.verify_expected:
+                if expected not in self.verify_actual:
+                    printf("Expected but not seen: %s\n", expected)
+            for actual in self.verify_actual:
+                if actual not in self.verify_expected:
+                    printf("Not expected: %s\n", actual)
 
         # Print summary if not suppressed by command line
         if not self.args.no_summary and not self.args.verify:
@@ -205,7 +200,7 @@ class HisMetricChecker():
     # Add error report entry
     def reportError(self, token, severity, msg, id):
         if self.args.verify:
-            self.verify_actual.append(str(token.linenr) + ':HIS-' + id)
+            self.verify_actual.append(token.file + ':' + str(token.linenr) + ':HIS-' + id)
         else:
             try:
                 cppcheckdata.reportError(token, severity, msg, 'HIS', id)

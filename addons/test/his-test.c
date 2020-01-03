@@ -3,10 +3,10 @@
 
 #include <stdio.h>
 
-void his_return_none_pass();
+void his_return_none_pass(); // HIS-CALLING
 
 // Test pattern HIS metric - Number of goto statements: 0
-void his_goto(int param)
+void his_goto(int param) // HIS-CALLING HIS-NRECUR
 {
     if (param < 0) {
         goto invalid_param; // HIS-GOTO
