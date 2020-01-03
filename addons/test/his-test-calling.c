@@ -3,28 +3,33 @@
 
 #include <stdio.h>
 
-void func_calling1()
+void func_calling1() // HIS-CALLING HIS-NRECUR
 {
-    his_goto(1);
-    (void)printf("Calling his_goto(1)\n");
+    int idx = 1;
+    (void)printf("Calling his_goto(%d)\n", idx);
+    his_goto(idx);
+    (void)printf("Called his_goto(%d)\n", idx);
 }
 
 void func_calling2()
 {
-    his_goto(2);
-    (void)printf("Calling his_goto(2)\n");
-    his_goto(2);
-    (void)printf("Calling his_goto(2)\n");
+    int idx = 2;
+    (void)printf("Calling his_goto(%d)\n", idx);
+    his_goto(idx);
+    (void)printf("Calling his_goto(%d)\n", idx);
+    his_goto(idx);
 }
 
 void func_calling3()
 {
-    his_goto(3);
-    (void)printf("Calling his_goto(3)\n");
+    int idx = 3;
+    (void)printf("Calling his_goto(%d)\n", idx);
+    his_goto(idx);  
 }
 
 void func_calling4()
 {
-    his_goto(4);
-    (void)printf("Calling his_goto(4)\n");
+    int idx = 4;
+    (void)printf("Calling his_goto(%d)\n", idx);
+    his_goto(idx);
 }
