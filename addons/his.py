@@ -78,6 +78,7 @@ class HisMetricChecker():
         'STMT'   : 0,
         'LEVEL'  : 0,
         'RETURN' : 0,
+        'VOCF'   : 0,
         'NRECUR' : 0
     }
 
@@ -100,6 +101,18 @@ class HisMetricChecker():
     # Dictionary to store list of functions called by
     # function referenced by key
     functions_called = dict()
+
+    # list of distinct operators
+    distinct_operator_list = list()
+
+    # sum of operators
+    sum_of_operators = 0
+
+    # list of distinct operands
+    distinct_operand_list = list()
+
+    # sum of operands
+    sum_of_operands = 0
 
     # Constructor of His metric checker
     def __init__(self, args):
@@ -160,12 +173,15 @@ class HisMetricChecker():
                 self.execute_metric_check("STMT", self.his_stmt, cfg)
                 self.execute_metric_check("LEVEL", self.his_level, cfg)
                 self.execute_metric_check("RETURN", self.his_return, cfg)
+                self.execute_metric_check("VOCF", self.his_vocf, cfg, data.rawTokens[num_raw_tokens:])
             num_raw_tokens = len(data.rawTokens)
 
         if not self.args.quiet:
             printf("Checking metrics for all dump files...\n")
         # Check for violations of HIS-CALLING after all dump files have been analyzed.
         self.execute_metric_check("CALLING", self.his_calling_result)
+        # Check for violation of HIS-VOCF after all dump files have been analyzed.
+        self.execute_metric_check("VOCF", self.his_vocf_result)
         # Check for violations of HIS-NRECUR after all dump files have been analyzed.
         self.execute_metric_check("NRECUR", self.his_num_recursions)
 
@@ -199,16 +215,21 @@ class HisMetricChecker():
 
     # Add error report entry
     def reportError(self, token, severity, msg, id):
-        if self.args.verify:
-            self.verify_actual.append(token.file + ':' + str(token.linenr) + ':HIS-' + id)
+        if token is None:
+            sys.stderr.write('[' + 'All files' + ':' + '---' +
+                             '] (' + severity + ') ' + msg + ' [HIS-' + id +
+                             ']\n')
         else:
-            try:
-                cppcheckdata.reportError(token, severity, msg, 'HIS', id)
-            except ValueError:
-                sys.stderr.write('[' + token.file + ':' + str(token.linenr) +
-                                 '] (' + severity + ') ' + msg + ' [HIS-' + id +
-                                 ']\n')
-            self.his_stats[id] = self.his_stats[id] + 1
+            if self.args.verify:
+                self.verify_actual.append(token.file + ':' + str(token.linenr) + ':HIS-' + id)
+            else:
+                try:
+                    cppcheckdata.reportError(token, severity, msg, 'HIS', id)
+                except ValueError:
+                    sys.stderr.write('[' + token.file + ':' + str(token.linenr) +
+                                     '] (' + severity + ') ' + msg + ' [HIS-' + id +
+                                     ']\n')
+        self.his_stats[id] = self.his_stats[id] + 1
 
     # Is this a function call
     def isFunctionCall(self, token):
@@ -280,6 +301,14 @@ class HisMetricChecker():
         if token.str == "while" and token.previous.str == "}" and token.previous.scope.type == "Do":
             ret_val = True
         return ret_val
+
+    # Is token an operand
+    def isOperand(self, token):
+        return False
+
+    # Is token an operator
+    def isOperator(self, token):
+        return False
 
     # HIS-COMF
     # Relationship of comments to number of statements: > 0.2
@@ -482,6 +511,28 @@ class HisMetricChecker():
                         token = token.next
                     if num_return_points > 1:
                         self.reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1', 'RETURN')
+
+    # HIS-VOCF
+    # Language scope: 1-4
+    def his_vocf(self, data, rawTokens):
+        for token in rawTokens:
+            if token.str.startswith("//") or token.str.startswith("/*"):
+                continue
+            if self.isOperator(token):
+                self.sum_of_operators += 1
+                if token.str not in self.distinct_operator_list:
+                    self.distinct_operator_list.append(token.str)
+            elif self.isOperand(token):
+                self.sum_of_operands += 1
+                if token.str not in self.distinct_operand_list:
+                    self.distinct_operand_list.append(token.str)
+
+    # HIS-VOCF calculate result
+    def his_vocf_result(self):
+        if len(self.distinct_operator_list) > 0 or len(self.distinct_operand_list) > 0:
+            vocf = (self.sum_of_operators + self.sum_of_operands) // (len(self.distinct_operator_list) + len(self.distinct_operand_list))
+            if vocf < 1 or vocf > 4:
+                self.reportError(None, 'style', 'Language scope: 1-4', 'VOCF')
 
     # Check call path if there is a recursive call to function given by func_name
     def isRecursiveFunctionCall(self, function_name, called_function_name, called_functions_done):
