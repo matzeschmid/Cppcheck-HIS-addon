@@ -64,6 +64,58 @@ class HisMetricChecker():
         'while'
     }
 
+    closing_operators = {
+        ']',
+        ')',
+        '}',
+    }
+
+    operators = {
+        '[]',
+        '(',
+        '{',
+        '.',
+        '->',
+        '++',
+        '--',
+        'sizeof',
+        '&',
+        '*',
+        '+',
+        '-',
+        '~',
+        '!',
+        '/',
+        '%',
+        '<<',
+        '>>',
+        '<',
+        '<=',
+        '>',
+        '>=',
+        '==',
+        '!=',
+        '|',
+        '^',
+        '&&',
+        '||',
+        '?',
+        ':',
+        '=',
+        '*=',
+        '/=',
+        '%=',
+        '+=',
+        '-=',
+        '<<=',
+        '>>=',
+        '&=',
+        '^=',
+        '|=',
+        ',',
+        ';'
+    }
+
     # Dictionary to store HIS metric violation statistics counter.
     # If a metric is suppressed this will be stored instead of
     # counter value.
@@ -173,7 +225,7 @@ class HisMetricChecker():
                 self.execute_metric_check("STMT", self.his_stmt, cfg)
                 self.execute_metric_check("LEVEL", self.his_level, cfg)
                 self.execute_metric_check("RETURN", self.his_return, cfg)
-                self.execute_metric_check("VOCF", self.his_vocf, cfg, data.rawTokens[num_raw_tokens:])
+                self.execute_metric_check("VOCF", self.his_vocf, cfg)
             num_raw_tokens = len(data.rawTokens)
 
         if not self.args.quiet:
@@ -308,7 +360,10 @@ class HisMetricChecker():
 
     # Is token an operator
     def isOperator(self, token):
-        return False
+        if token.str in self.operators:
+            return True
+        else:
+            return False
 
     # HIS-COMF
     # Relationship of comments to number of statements: > 0.2
@@ -514,25 +569,31 @@ class HisMetricChecker():
 
     # HIS-VOCF
     # Language scope: 1-4
-    def his_vocf(self, data, rawTokens):
-        for token in rawTokens:
-            if token.str.startswith("//") or token.str.startswith("/*"):
+    def his_vocf(self, data):
+        for token in data.tokenlist:
+            if token.str.startswith("//") or token.str.startswith("/*") or token.str in self.closing_operators:
                 continue
-            if self.isOperator(token):
+            if self.isOperator(token) or self.isFunctionCall(token) or token.str in self.keywords:
+                printf("Token: %s\n", token.str)
                 self.sum_of_operators += 1
                 if token.str not in self.distinct_operator_list:
                     self.distinct_operator_list.append(token.str)
-            elif self.isOperand(token):
+            else:
                 self.sum_of_operands += 1
                 if token.str not in self.distinct_operand_list:
                     self.distinct_operand_list.append(token.str)
 
     # HIS-VOCF calculate result
     def his_vocf_result(self):
+        printf("Distinct operators: %d\n", len(self.distinct_operator_list))
+        printf("Sum of operators  : %d\n", self.sum_of_operators)
+        printf("Distinct operands : %d\n", len(self.distinct_operand_list))
+        printf("Sum of operands   : %d\n", self.sum_of_operands)
         if len(self.distinct_operator_list) > 0 or len(self.distinct_operand_list) > 0:
             vocf = (self.sum_of_operators + self.sum_of_operands) // (len(self.distinct_operator_list) + len(self.distinct_operand_list))
             if vocf < 1 or vocf > 4:
                 self.reportError(None, 'style', 'Language scope: 1-4', 'VOCF')
+        printf("VOCF              : %d\n", vocf)
 
     # Check call path if there is a recursive call to function given by func_name
     def isRecursiveFunctionCall(self, function_name, called_function_name, called_functions_done):
