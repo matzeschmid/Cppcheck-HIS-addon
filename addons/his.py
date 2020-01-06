@@ -64,7 +64,7 @@ class HisMetricChecker():
         'while'
     }
 
-    closing_operators = {
+    closing_pairwise_operators = {
         ']',
         ')',
         '}',
@@ -212,6 +212,7 @@ class HisMetricChecker():
                             if word.startswith("HIS-"):
                                 self.verify_expected.append(token.file + ':' + str(token.linenr) + ':' + word)
 
+            cfg_idx = 0
             for cfg in data.configurations:
                 if len(data.configurations) > 1 and not self.args.quiet:
                     printf("Checking %s, config %s...\n",dumpfile, cfg.name)
@@ -225,7 +226,9 @@ class HisMetricChecker():
                 self.execute_metric_check("STMT", self.his_stmt, cfg)
                 self.execute_metric_check("LEVEL", self.his_level, cfg)
                 self.execute_metric_check("RETURN", self.his_return, cfg)
-                self.execute_metric_check("VOCF", self.his_vocf, cfg)
+                if (cfg_idx < 1):
+                    self.execute_metric_check("VOCF", self.his_vocf, cfg)
+                cfg_idx = cfg_idx + 1
             num_raw_tokens = len(data.rawTokens)
 
         if not self.args.quiet:
@@ -353,17 +356,6 @@ class HisMetricChecker():
         if token.str == "while" and token.previous.str == "}" and token.previous.scope.type == "Do":
             ret_val = True
         return ret_val
-
-    # Is token an operand
-    def isOperand(self, token):
-        return False
-
-    # Is token an operator
-    def isOperator(self, token):
-        if token.str in self.operators:
-            return True
-        else:
-            return False
 
     # HIS-COMF
     # Relationship of comments to number of statements: > 0.2
@@ -571,10 +563,11 @@ class HisMetricChecker():
     # Language scope: 1-4
     def his_vocf(self, data):
         for token in data.tokenlist:
-            if token.str.startswith("//") or token.str.startswith("/*") or token.str in self.closing_operators:
+            # Closing pairwise operators have already been counted by 
+            # corresponding opening operators.
+            if token.str in self.closing_pairwise_operators:
                 continue
-            if self.isOperator(token) or self.isFunctionCall(token) or token.str in self.keywords:
-                printf("Token: %s\n", token.str)
+            if token.str in self.operators or token.str in self.keywords or self.isFunctionCall(token):
                 self.sum_of_operators += 1
                 if token.str not in self.distinct_operator_list:
                     self.distinct_operator_list.append(token.str)
@@ -585,15 +578,15 @@ class HisMetricChecker():
 
     # HIS-VOCF calculate result
     def his_vocf_result(self):
-        printf("Distinct operators: %d\n", len(self.distinct_operator_list))
-        printf("Sum of operators  : %d\n", self.sum_of_operators)
-        printf("Distinct operands : %d\n", len(self.distinct_operand_list))
-        printf("Sum of operands   : %d\n", self.sum_of_operands)
+        #printf("Distinct operators: %d\n", len(self.distinct_operator_list))
+        #printf("Sum of operators  : %d\n", self.sum_of_operators)
+        #printf("Distinct operands : %d\n", len(self.distinct_operand_list))
+        #printf("Sum of operands   : %d\n", self.sum_of_operands)
         if len(self.distinct_operator_list) > 0 or len(self.distinct_operand_list) > 0:
             vocf = (self.sum_of_operators + self.sum_of_operands) // (len(self.distinct_operator_list) + len(self.distinct_operand_list))
             if vocf < 1 or vocf > 4:
                 self.reportError(None, 'style', 'Language scope: 1-4', 'VOCF')
-        printf("VOCF              : %d\n", vocf)
+        #printf("VOCF              : %d\n", vocf)
 
     # Check call path if there is a recursive call to function given by func_name
     def isRecursiveFunctionCall(self, function_name, called_function_name, called_functions_done):
