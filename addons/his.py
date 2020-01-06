@@ -214,19 +214,17 @@ class HisMetricChecker():
 
             cfg_idx = 0
             for cfg in data.configurations:
-                if len(data.configurations) > 1 and not self.args.quiet:
-                    printf("Checking %s, config %s...\n",dumpfile, cfg.name)
-                self.execute_metric_check("COMF", self.his_comf, cfg, data.rawTokens[num_raw_tokens:])
-                self.execute_metric_check("PATH", self.his_path, cfg)
-                self.execute_metric_check("GOTO", self.his_goto, cfg)
-                self.execute_metric_check("STCYC", self.his_stcyc, cfg)
-                self.execute_metric_check("CALLING", self.his_calling, cfg)
-                self.execute_metric_check("CALLS", self.his_calls, cfg)
-                self.execute_metric_check("PARAM", self.his_param, cfg)
-                self.execute_metric_check("STMT", self.his_stmt, cfg)
-                self.execute_metric_check("LEVEL", self.his_level, cfg)
-                self.execute_metric_check("RETURN", self.his_return, cfg)
-                if (cfg_idx < 1):
+                if (cfg_idx < 1): 
+                    self.execute_metric_check("COMF", self.his_comf, cfg, data.rawTokens[num_raw_tokens:])
+                    self.execute_metric_check("PATH", self.his_path, cfg)
+                    self.execute_metric_check("GOTO", self.his_goto, cfg)
+                    self.execute_metric_check("STCYC", self.his_stcyc, cfg)
+                    self.execute_metric_check("CALLING", self.his_calling, cfg)
+                    self.execute_metric_check("CALLS", self.his_calls, cfg)
+                    self.execute_metric_check("PARAM", self.his_param, cfg)
+                    self.execute_metric_check("STMT", self.his_stmt, cfg)
+                    self.execute_metric_check("LEVEL", self.his_level, cfg)
+                    self.execute_metric_check("RETURN", self.his_return, cfg)
                     self.execute_metric_check("VOCF", self.his_vocf, cfg)
                 cfg_idx = cfg_idx + 1
             num_raw_tokens = len(data.rawTokens)
