@@ -6,27 +6,27 @@ This addon has been tested on a machine running 64-bit Ubuntu 19.10 with Cppchec
 # Supported HIS metric checks
 The following metrics are checked according to document `HIS source code metrics v1.3.1` .
 
-| Metric | Description | Range |
-| ------ | ----------- |:-----:|
-| HIS-COMF | Relationship of comments to number of statements | > 0.2 |
-| HIS-PATH | Number of non cyclic remark paths | 1-80 |
-| HIS-GOTO | Number of goto statements | 0 |
-| HIS-STCYC | Cyclomatic complexity v(G) of functions by McCabe | 1-10 |
-| HIS-CALLING | Number of subfunctions calling a function | 0-5 |
-| HIS-CALLS | Number of called functions excluding duplicates | 0-7 |
-| HIS-PARAM | Number of function parameters | 0-5 |
-| HIS-STMT | Number of statements per function | 1-50 |
-| HIS-LEVEL | Depth of nesting of a function | 0-4 |
-| HIS-RETURN | Number of return points within a function | 0-1 |
-| HIS-NRECUR | Number of recursions | 0 |
+| Metric | Description | Range | Note |
+| ------ | ----------- |:-----:|:----:|
+| HIS-COMF | Relationship of comments to number of statements | > 0.2 | |
+| HIS-PATH | Number of non cyclic remark paths | 1-80 | |
+| HIS-GOTO | Number of goto statements | 0 | |
+| HIS-STCYC | Cyclomatic complexity v(G) of functions by McCabe | 1-10 | |
+| HIS-CALLING | Number of subfunctions calling a function | 0-5 | |
+| HIS-CALLS | Number of called functions excluding duplicates | 0-7 | |
+| HIS-PARAM | Number of function parameters | 0-5 | |
+| HIS-STMT | Number of statements per function | 1-50 | |
+| HIS-LEVEL | Depth of nesting of a function | 0-4 | |
+| HIS-RETURN | Number of return points within a function | 0-1 | |
+| HIS-VOCF | Language scope | 1-4 | Experimental, low accuracy |
+| HIS-NRECUR | Number of recursions | 0 | |
 
 # Missing HIS metric checks
-The following metrics part of document `HIS source code metrics v1.3.1` are not checked yet.
+The following metrics part of document `HIS source code metrics v1.3.1` are not checked.
 
 | Metric | Description | Note |
 | ------ | ----------- |:-----:|
 | HIS-SI | Stability index | No support planned |
-| HIS-VOCF | Language scope | Might be supported by a future version |
 | HIS-NOMV | Number of MISRA HIS Subset violations | No support planned |
 | HIS-NOMVPR | Number of MISRA HIS Subset violations per rule | No support planned |
 | HIS-SCHG | Number of changed statements | No support planned |
