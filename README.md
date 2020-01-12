@@ -48,6 +48,8 @@ Directories are the same as for Cppcheck addons.
 # Usage
 Run `python his.py -h` or `python his.py --help` to get help on how to use HIS metric addon and show which command line options are available.
 
+HIS metric addon uses first configuration of Cppcheck dump file(s) only. Thus create dump files for desired configuration using Cppcheck with command line options or project file.
+
 Example how to use HIS addon with HIS metric test pattern files on a Linux machine.
 
 1. Create a dump file for the source files which are desired to be checked.
