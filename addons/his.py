@@ -446,11 +446,11 @@ class HisMetricChecker():
     # HIS-CALLING
     # Number of subfunctions calling a function: 0-5
     def his_calling(self, data):
-        for func in data.functions:
-            self.function_list.append(func)
+        for func in data.functions:            
             # Search for scope of current function
             for scope in data.scopes:
                 if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
+                    self.function_list.append(func)
                     # Search function body for function calls reduced
                     # by duplicates
                     token = scope.bodyStart
@@ -468,8 +468,10 @@ class HisMetricChecker():
     # HIS-CALLING calculate result
     def his_calling_result(self):
         for func in self.function_list:
-            if func.name in self.function_calls and self.function_calls[func.name] > 5:
-                self.reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5', 'CALLING')
+            if func.name in self.function_calls:
+                self.statistics_list.append("HIS-CALLING - %s: %d" % (func.name.ljust(48), self.function_calls[func.name]))
+                if self.function_calls[func.name] > 5:
+                    self.reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5', 'CALLING')
 
     # HIS-CALLS
     # Number of called functions excluding duplicates: 0-7
