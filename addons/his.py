@@ -495,9 +495,13 @@ class HisMetricChecker():
     # Number of function parameters: 0-5
     def his_param(self, data):
         for func in data.functions:
-            # Check number of function parameters
-            if len(func.argument) > 5:
-                self.reportError(func.tokenDef, 'style', 'Number of function parameters: 0-5', 'PARAM')
+            # Search for scope of current function
+            for scope in data.scopes:
+                if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
+                    # Check number of function parameters
+                    self.statistics_list.append("HIS-PARAM - %s: %d" % (func.name.ljust(50), len(func.argument)))
+                    if len(func.argument) > 5:
+                        self.reportError(func.tokenDef, 'style', 'Number of function parameters: 0-5', 'PARAM')
 
     # HIS-STMT
     # Number of statements per function: 1-50
@@ -505,10 +509,13 @@ class HisMetricChecker():
         num_of_statements = 0
         # Count line of statements in functions
         for func in data.functions:
-            num_of_statements = self.numOfFunctionStatements(func, data)
-            self.statistics_list.append("HIS-STMT  - %s: %d" % (func.name.ljust(50), num_of_statements))
-            if num_of_statements > 50:
-                self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
+            # Search for scope of current function 
+            for scope in data.scopes:
+                if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
+                    num_of_statements = self.numOfFunctionStatements(func, data)
+                    self.statistics_list.append("HIS-STMT  - %s: %d" % (func.name.ljust(50), num_of_statements))
+                    if num_of_statements > 50:
+                        self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
 
     # HIS-LEVEL
     # Depth of nesting of a function: 0-4
