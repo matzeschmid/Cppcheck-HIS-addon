@@ -11,6 +11,7 @@ import argparse
 import cppcheckdata
 import sys
 import re
+import json
 
 
 # Formatted printf like function usable by Python 2.7.x and 3.x code.
@@ -269,7 +270,18 @@ class HisMetricChecker():
     # Add error report entry
     def reportError(self, token, severity, msg, id):
         if token is None:
-            sys.stderr.write('[' + 'All files' + ':' + '---' +
+            if self.args.cli:
+                message = { 'file': 'All files',
+                            'linenr': 0,
+                            'column': 0,
+                            'severity': severity,
+                            'message': msg,
+                            'addon': 'HIS',
+                            'errorId': id,
+                            'extra': ''}
+                sys.stdout.write(json.dumps(message) + '\n')
+            else:
+                sys.stderr.write('[' + 'All files' + ':' + '---' +
                              '] (' + severity + ') ' + msg + ' [HIS-' + id +
                              ']\n')
         else:
@@ -279,9 +291,20 @@ class HisMetricChecker():
                 try:
                     cppcheckdata.reportError(token, severity, msg, 'HIS', id)
                 except ValueError:
-                    sys.stderr.write('[' + token.file + ':' + str(token.linenr) +
-                                     '] (' + severity + ') ' + msg + ' [HIS-' + id +
-                                     ']\n')
+                    if self.args.cli:
+                        message = { 'file': token.file,
+                                    'linenr': token.linenr,
+                                    'column': token.column,
+                                    'severity': severity,
+                                    'message': msg,
+                                    'addon': 'HIS',
+                                    'errorId': id,
+                                    'extra': ''}
+                        sys.stdout.write(json.dumps(message) + '\n')
+                    else:
+                        sys.stderr.write('[' + token.file + ':' + str(token.linenr) +
+                                         '] (' + severity + ') ' + msg + ' [HIS-' + id +
+                                         ']\n')
         self.his_stats[id] = self.his_stats[id] + 1
 
     # Is this a function call
@@ -638,11 +661,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("dumpfile", nargs='*', help="dump file from cppcheck")
     parser.add_argument("-q", "--quiet", action="store_true", help='do not print "Checking ..." lines')
+    parser.add_argument("--cli", help="Addon is executed from Cppcheck", action="store_true")
     parser.add_argument("-verify", help=argparse.SUPPRESS, action="store_true")
     parser.add_argument("--suppress-metrics", type=str, help=SUPPRESS_METRICS_HELP)
     parser.add_argument("--no-summary", help="hide summary of violations", action="store_true")
     parser.add_argument("--statistics", help="show statistics information", action="store_true")
     args = parser.parse_args()
+
+    if args.cli:
+        args.quiet = True
+        args.no_summary = True
 
     if args.dumpfile:
         his_checker = HisMetricChecker(args)
@@ -650,7 +678,6 @@ def main():
     else:
         if not args.quiet:
             printf("No input files.\n")
-
 
 if __name__ == '__main__':
     main()
