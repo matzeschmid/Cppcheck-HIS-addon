@@ -50,7 +50,7 @@ Run `python his.py -h` or `python his.py --help` to get help on how to use HIS m
 
 HIS metric addon uses first configuration of Cppcheck dump file(s) only. Thus create dump files for desired configuration using Cppcheck with command line options or project file.
 
-Example how to use HIS addon with HIS metric test pattern files on a Linux machine.
+**Example how to use HIS addon with HIS metric test pattern files on a Linux machine.**
 
 1. Create a dump file for the source files which are desired to be checked.
 
@@ -59,3 +59,13 @@ Example how to use HIS addon with HIS metric test pattern files on a Linux machi
 2. Run HIS metric checker using dump files created during previous step.
 
    `$> python ~/cppcheck/addons/his.py ~/cppcheck/cppcheck/addons/test/his-test.c.dump ~/cppcheck/cppcheck/addons/test/his-test-calling.c.dump`
+
+**Example how to call HIS addon from Cppcheck with HIS metric test pattern files on a Linux machine.**
+
+Call HIS addon for files `his-test.c` and `his-test-calling.c` and write result to `his.xml`.
+
+`$> ~/cppcheck/cppcheck --addon=his --xml --output-file=his.xml ~/cppcheck/cppcheck/addons/test/his-test.c ~/cppcheck/cppcheck/addons/test/his-test-calling.c`
+
+**NOTE:** Calling HIS addon from Cppcheck using command line option --addon might suppress HIS-CALLING, HIS-NRECUR and HIS-VOCF violations depending on multiple files because addon is called for each dump file separatly.
+
+**NOTE:** Command line option --addon is availabe since Cppcheck v1.88 .
