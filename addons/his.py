@@ -337,8 +337,8 @@ class HisMetricChecker():
                 current_line_nr = -1
                 # Search function body and count statements
                 while token is not None and token != scope.bodyEnd:
-                    # Ignore lines with just a opening or closing curly bracket
-                    if token.str.startswith("{") or token.str.startswith("}"):
+                    # Ignore lines with just a opening or closing curly bracket or semicolon
+                    if token.str.startswith("{") or token.str.startswith("}") or token.str.startswith(";"):
                         if token.linenr != token.previous.linenr and token.linenr != token.next.linenr:
                             token = token.next
                             continue
@@ -534,13 +534,10 @@ class HisMetricChecker():
         num_of_statements = 0
         # Count line of statements in functions
         for func in data.functions:
-            # Search for scope of current function 
-            for scope in data.scopes:
-                if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
-                    num_of_statements = self.numOfFunctionStatements(func, data)
-                    self.statistics_list.append("HIS-STMT  - %s: %d" % (func.name.ljust(50), num_of_statements))
-                    if num_of_statements > 50:
-                        self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
+            num_of_statements = self.numOfFunctionStatements(func, data)
+            self.statistics_list.append("HIS-STMT  - %s: %d" % (func.name.ljust(50), num_of_statements))
+            if num_of_statements > 50:
+                self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
 
     # HIS-LEVEL
     # Depth of nesting of a function: 0-4
