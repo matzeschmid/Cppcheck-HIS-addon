@@ -15,7 +15,7 @@ The following metrics are checked according to document `HIS source code metrics
 | Metric | Description | Range | Note |
 | ------ | ----------- |:-----:|:----:|
 | HIS-COMF | Relationship of comments to number of statements | > 0.2 | |
-| HIS-PATH | Number of non cyclic remark paths | 1-80 | Experimental, low accuracy |
+| HIS-PATH | Number of non cyclic remark paths | 1-80 | Experimental, not finished yet! |
 | HIS-GOTO | Number of goto statements | 0 | |
 | HIS-STCYC | Cyclomatic complexity v(G) of functions by McCabe | 1-10 | |
 | HIS-CALLING | Number of subfunctions calling a function | 0-5 | |
@@ -24,7 +24,7 @@ The following metrics are checked according to document `HIS source code metrics
 | HIS-STMT | Number of statements per function | 1-50 | |
 | HIS-LEVEL | Depth of nesting of a function | 0-4 | |
 | HIS-RETURN | Number of return points within a function | 0-1 | |
-| HIS-VOCF | Language scope | 1-4 | Experimental, low accuracy |
+| HIS-VOCF | Language scope | 1-4 | Experimental, not finished yet! |
 | HIS-NRECUR | Number of recursions | 0 | |
 
 # Missing HIS metric checks
