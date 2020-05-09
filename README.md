@@ -68,4 +68,4 @@ Call HIS addon for files `his-test.c` and `his-test-calling.c` and write result 
 
 **NOTE:** Calling HIS addon from Cppcheck using command line option --addon might suppress HIS-CALLING, HIS-NRECUR and HIS-VOCF violations depending on multiple files because addon is called for each dump file separatly.
 
-**NOTE:** Command line option --addon is availabe since Cppcheck v1.88 .
+**NOTE:** Command line option --addon is available since Cppcheck v1.88 .
