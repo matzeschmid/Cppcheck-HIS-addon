@@ -4,7 +4,7 @@ HIS metric python addon for Cppcheck.
 This addon depends on functionality provided by `cppcheckdata.py` which is part of Cppcheck `addons` directory.
 
 This addon has been tested 
-  - with Cppcheck v1.84 up to latest release v1.90
+  - with Cppcheck v1.84 up to v2.1
   - using Python 2.7.x as well as 3.7.x
   - on a machine running 64-bit Ubuntu 19.10
   - on a machine running 64-bit Windows 10
@@ -32,12 +32,12 @@ The following metrics part of document `HIS source code metrics v1.3.1` are not 
 
 | Metric | Description | Note |
 | ------ | ----------- |:-----:|
-| HIS-SI | Stability index | No support planned |
-| HIS-NOMV | Number of MISRA HIS Subset violations | No support planned |
-| HIS-NOMVPR | Number of MISRA HIS Subset violations per rule | No support planned |
-| HIS-SCHG | Number of changed statements | No support planned |
-| HIS-SDEL | Number of deleted statements | No support planned |
-| HIS-SNEW | Number of new statements | No support planned |
+| HIS-SI | Stability index | Not supported |
+| HIS-NOMV | Number of MISRA HIS Subset violations | Not supported |
+| HIS-NOMVPR | Number of MISRA HIS Subset violations per rule | Not supported |
+| HIS-SCHG | Number of changed statements | Not supported |
+| HIS-SDEL | Number of deleted statements | Not supported |
+| HIS-SNEW | Number of new statements | Not supported |
 
 
 # Installation
