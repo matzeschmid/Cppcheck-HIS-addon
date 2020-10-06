@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #define GOTO_MACRO(GOTO_LABLE)  goto GOTO_LABLE
+#define RETURN_MACRO return
 
 void his_return_none_pass(); // HIS-CALLING
 
@@ -129,7 +130,7 @@ int his_return_multiple_fail(int a, int b)  // HIS-RETURN
         return a - b;
     }
     else {
-        return b - a;
+        RETURN_MACRO b - a;
     }
 }
 
