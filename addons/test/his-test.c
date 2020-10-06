@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#define GOTO_MACRO(GOTO_LABLE)  goto GOTO_LABLE
+
 void his_return_none_pass(); // HIS-CALLING
 
 // Test pattern HIS metric - Number of goto statements: 0
@@ -11,6 +13,11 @@ void his_goto(int param) // HIS-CALLING HIS-NRECUR
     if (param < 0) {
         goto invalid_param; // HIS-GOTO
     }
+    else {
+        GOTO_MACRO(valid_param); // HIS-GOTO
+    }
+
+valid_param:
     (void)printf("Param: %d", param);
 invalid_param:
     func_calling1();
