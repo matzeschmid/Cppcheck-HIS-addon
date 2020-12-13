@@ -5,7 +5,7 @@ This addon depends on functionality provided by `cppcheckdata.py` which is part 
 
 This addon has been tested 
   - with Cppcheck v1.84 up to v2.3
-  - using Python 2.7.x as well as 3.7.x
+  - using Python 2.7.x as well as 3.8.x
   - on a machine running 64-bit Ubuntu 20.10
   - on a machine running 64-bit Windows 10
 
