@@ -422,7 +422,7 @@ class HisMetricChecker():
                         token = token.next
                     self.statistics_list.append("HIS-PATH  - %s: %d" % (func.name.ljust(50), num_paths))
                     if num_paths > 80:
-                        self.reportError(func.tokenDef, 'style', 'Number of non cyclic remark paths: 1-80', 'PATH')
+                        self.reportError(func.tokenDef, 'style', 'Number of non cyclic remark paths: 1-80'+ ' (' + str(num_paths) + ')', 'PATH')
 
     # HIS-GOTO
     # Number of goto statements: 0
@@ -464,7 +464,7 @@ class HisMetricChecker():
                     vG = num_edges - num_nodes + (2 * num_components)
                     self.statistics_list.append("HIS-STCYC - %s: %d (edges: %d, nodes: %d)" % (func.name.ljust(50), vG, num_edges, num_nodes))
                     if vG > 10:
-                        self.reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10', 'STCYC')
+                        self.reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10' + ' (' + str(vG) + ')', 'STCYC')
 
     # HIS-CALLING
     # Number of subfunctions calling a function: 0-5
@@ -494,7 +494,7 @@ class HisMetricChecker():
             if func.name in self.function_calls:
                 self.statistics_list.append("HIS-CALLING - %s: %d" % (func.name.ljust(48), self.function_calls[func.name]))
                 if self.function_calls[func.name] > 5:
-                    self.reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5', 'CALLING')
+                    self.reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5' + ' (' + str(self.function_calls[func.name]) + ')', 'CALLING')
 
     # HIS-CALLS
     # Number of called functions excluding duplicates: 0-7
@@ -514,7 +514,7 @@ class HisMetricChecker():
                         token = token.next
                     self.functions_called[func.name] = func_calls
                     if len(func_calls) > 7:
-                        self.reportError(func.tokenDef, 'style', 'Number of called functions excluding duplicates: 0-7', 'CALLS')
+                        self.reportError(func.tokenDef, 'style', 'Number of called functions excluding duplicates: 0-7' + ' (' + str(len(func_calls)) + ')', 'CALLS')
 
     # HIS-PARAM
     # Number of function parameters: 0-5
@@ -526,7 +526,7 @@ class HisMetricChecker():
                     # Check number of function parameters
                     self.statistics_list.append("HIS-PARAM - %s: %d" % (func.name.ljust(50), len(func.argument)))
                     if len(func.argument) > 5:
-                        self.reportError(func.tokenDef, 'style', 'Number of function parameters: 0-5', 'PARAM')
+                        self.reportError(func.tokenDef, 'style', 'Number of function parameters: 0-5' + ' (' + str(len(func.argument)) + ')', 'PARAM')
 
     # HIS-STMT
     # Number of statements per function: 1-50
@@ -537,7 +537,7 @@ class HisMetricChecker():
             num_of_statements = self.numOfFunctionStatements(func, data)
             self.statistics_list.append("HIS-STMT  - %s: %d" % (func.name.ljust(50), num_of_statements))
             if num_of_statements > 50:
-                self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50', 'STMT')
+                self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50' + ' (' + str(num_of_statements) + ')', 'STMT')
 
     # HIS-LEVEL
     # Depth of nesting of a function: 0-4
@@ -567,7 +567,7 @@ class HisMetricChecker():
                             nesting_level = 1
                             nesting_level += self.calculateNestingLevel(data, token.scope, scope)
                             if nesting_level > 4:
-                                self.reportError(token_compound_stm, 'style', 'Depth of nesting of a function: 0-4', 'LEVEL')
+                                self.reportError(token_compound_stm, 'style', 'Depth of nesting of a function: 0-4' + ' (' + str(nesting_level) + ')', 'LEVEL')
 
     # HIS-RETURN
     # Number of return points within a function: 0-1
@@ -584,7 +584,7 @@ class HisMetricChecker():
                             num_return_points += 1
                         token = token.next
                     if num_return_points > 1:
-                        self.reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1', 'RETURN')
+                        self.reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1' + ' (' + str(num_return_points) + ')', 'RETURN')
 
     # HIS-VOCF
     # Language scope: 1-4
