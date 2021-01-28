@@ -330,7 +330,7 @@ class HisMetricChecker():
 
     # If token is the starting point of a lambda function
     # then skip all tokens of lambda function body.
-    def skipLambdaFunction(self, data, token):
+    def skipLambdaFunction(self, data, scope, token):
         next_token = token
         if hasattr(token, 'function') and token.function is not None:
             # Search for scope of lambda function
@@ -338,6 +338,8 @@ class HisMetricChecker():
                 if scope.type == "Lambda" and self.scopeMatchesFunction(scope, token.function):
                     next_token = scope.bodyEnd
                     break
+        elif token.scope != scope and token.scope.type == "Lambda":
+            next_token = token.scope.bodyEnd
         return next_token
 
     # Count line of statements in function
@@ -592,7 +594,7 @@ class HisMetricChecker():
                     token = scope.bodyStart
                     num_return_points = 0
                     while token is not None and token != scope.bodyEnd and num_return_points < 2:
-                        token = self.skipLambdaFunction(data, token)
+                        token = self.skipLambdaFunction(data, scope, token)
                         if token.str == "return":
                             num_return_points += 1
                         token = token.next
