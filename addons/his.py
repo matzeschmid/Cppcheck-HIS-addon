@@ -228,7 +228,10 @@ class HisMetricChecker():
                     self.execute_metric_check("RETURN", self.his_return, cfg)
                     self.execute_metric_check("VOCF", self.his_vocf, cfg)
                 cfg_idx = cfg_idx + 1
-            num_raw_tokens = len(data.rawTokens)
+            # Since Cppcheck 2.4 rawTokens has been moved from class to instance level.
+            # It will be initialized for each dump file analysis.
+            if 'rawTokens' not in data.__dict__:
+                num_raw_tokens = len(data.rawTokens)
 
         if not self.args.quiet:
             printf("Checking metrics for all dump files...\n")
@@ -413,7 +416,7 @@ class HisMetricChecker():
         self.statistics_list.append("Lines of statements: %d" % lines_of_statements)
         self.statistics_list.append("Lines of comments:   %d" % lines_of_comments)
         self.statistics_list.append("HIS-COMF:            %.2f" % (lines_of_comments / lines_of_statements))
-        if (lines_of_comments / lines_of_statements) < 0.2:
+        if (lines_of_comments / lines_of_statements) < 0.2 and len(rawTokens) > 0:
             self.reportError(rawTokens[0], 'style', 'Relationship of comments to number of statements: > 0.2', 'COMF')
 
     # HIS-PATH
