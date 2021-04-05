@@ -69,3 +69,13 @@ Call HIS addon for files `his-test.c` and `his-test-calling.c` and write result 
 **NOTE:** Calling HIS addon from Cppcheck using command line option --addon might suppress HIS-CALLING, HIS-NRECUR and HIS-VOCF violations depending on multiple files because addon is called for each dump file separatly.
 
 **NOTE:** Command line option --addon is available since Cppcheck v1.88 .
+
+**Example how to suppress metrics (e.g. HIS-GOTO and HIS-PARAM)**
+
+    `$> python ~/cppcheck/addons/his.py --suppress-metrics GOTO,PARAM ~/cppcheck/cppcheck/addons/test/his-test.c.dump ~/cppcheck/cppcheck/addons/test/his-test-calling.c.dump`
+    
+**Example how to modify upper limit of metrics (e.g. HIS-RETURN and HIS-PARAM)**
+
+    `$> python ~/cppcheck/addons/his.py --modify-metrics RETURN:2,PARAM:6 ~/cppcheck/cppcheck/addons/test/his-test.c.dump ~/cppcheck/cppcheck/addons/test/his-test-calling.c.dump`
+
+    Upper limit of following metrics could be modified: PATH, STCYC, CALLING, CALLS, PARAM, STMT, LEVEL, RETURN
