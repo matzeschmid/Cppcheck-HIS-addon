@@ -135,6 +135,21 @@ class HisMetricChecker():
         'NRECUR' : 0
     }
 
+    # Dictionary for some metrics to store upper limit used to 
+    # recognize and report a violation. 
+    # It's used to make it possible to modify upper limits.
+    # Defaults are from HIS metric document.
+    his_metric_upper_limit = {
+        'PATH'   : 80,
+        'STCYC'  : 10,
+        'CALLING': 5,
+        'CALLS'  : 7,
+        'PARAM'  : 5,
+        'STMT'   : 50,
+        'LEVEL'  : 4,
+        'RETURN' : 1
+    }    
+
     # command line arguments
     args = None
 
@@ -178,6 +193,14 @@ class HisMetricChecker():
                 self.suppression_list[idx] = self.suppression_list[idx].upper()
                 if self.suppression_list[idx] in self.his_stats:
                     self.his_stats[self.suppression_list[idx]] = "Suppressed"
+        if args.modify_metrics:
+            modified_metrics_list = args.modify_metrics.split(',')
+            for modified_metric in modified_metrics_list:
+                metric = modified_metric.split(':')
+                if len(metric) == 2:
+                    if metric[0] in self.his_metric_upper_limit.keys():
+                        self.his_metric_upper_limit[metric[0]] = int(metric[1])
+                        printf("HIS-%s upper limit set to %s\n", metric[0], metric[1])
 
     # Object representation
     def __repr__(self):
@@ -438,7 +461,7 @@ class HisMetricChecker():
                             num_paths *= (1 + self.numOfSwitchCases(token))
                         token = token.next
                     self.statistics_list.append("HIS-PATH  - %s: %d" % (func.name.ljust(50), num_paths))
-                    if num_paths > 80:
+                    if num_paths > self.his_metric_upper_limit['PATH']:
                         self.reportError(func.tokenDef, 'style', 'Number of non cyclic remark paths: 1-80'+ ' (' + str(num_paths) + ')', 'PATH')
 
     # HIS-GOTO
@@ -480,7 +503,7 @@ class HisMetricChecker():
                         token = token.next
                     vG = num_edges - num_nodes + (2 * num_components)
                     self.statistics_list.append("HIS-STCYC - %s: %d (edges: %d, nodes: %d)" % (func.name.ljust(50), vG, num_edges, num_nodes))
-                    if vG > 10:
+                    if vG > self.his_metric_upper_limit['STCYC']:
                         self.reportError(func.tokenDef, 'style', 'Cyclomatic complexity v(G) of functions by McCabe: 1-10' + ' (' + str(vG) + ')', 'STCYC')
 
     # HIS-CALLING
@@ -510,7 +533,7 @@ class HisMetricChecker():
         for func in self.function_list:
             if func.name in self.function_calls:
                 self.statistics_list.append("HIS-CALLING - %s: %d" % (func.name.ljust(48), self.function_calls[func.name]))
-                if self.function_calls[func.name] > 5:
+                if self.function_calls[func.name] > self.his_metric_upper_limit['CALLING']:
                     self.reportError(func.tokenDef, 'style', 'Number of subfunctions calling a function: 0-5' + ' (' + str(self.function_calls[func.name]) + ')', 'CALLING')
 
     # HIS-CALLS
@@ -530,7 +553,7 @@ class HisMetricChecker():
                                 func_calls.append(token.str)
                         token = token.next
                     self.functions_called[func.name] = func_calls
-                    if len(func_calls) > 7:
+                    if len(func_calls) > self.his_metric_upper_limit['CALLS']:
                         self.reportError(func.tokenDef, 'style', 'Number of called functions excluding duplicates: 0-7' + ' (' + str(len(func_calls)) + ')', 'CALLS')
 
     # HIS-PARAM
@@ -542,7 +565,7 @@ class HisMetricChecker():
                 if scope.type == "Function" and self.scopeMatchesFunction(scope, func):
                     # Check number of function parameters
                     self.statistics_list.append("HIS-PARAM - %s: %d" % (func.name.ljust(50), len(func.argument)))
-                    if len(func.argument) > 5:
+                    if len(func.argument) > self.his_metric_upper_limit['PARAM']:
                         self.reportError(func.tokenDef, 'style', 'Number of function parameters: 0-5' + ' (' + str(len(func.argument)) + ')', 'PARAM')
 
     # HIS-STMT
@@ -553,7 +576,7 @@ class HisMetricChecker():
         for func in data.functions:
             num_of_statements = self.numOfFunctionStatements(func, data)
             self.statistics_list.append("HIS-STMT  - %s: %d" % (func.name.ljust(50), num_of_statements))
-            if num_of_statements > 50:
+            if num_of_statements > self.his_metric_upper_limit['STMT']:
                 self.reportError(func.tokenDef, 'style', 'Number of statements per function: 1-50' + ' (' + str(num_of_statements) + ')', 'STMT')
 
     # HIS-LEVEL
@@ -583,7 +606,7 @@ class HisMetricChecker():
                             # Nesting level starts at depth 1 for function entry
                             nesting_level = 1
                             nesting_level += self.calculateNestingLevel(data, token.scope, scope)
-                            if nesting_level > 4:
+                            if nesting_level > self.his_metric_upper_limit['LEVEL']:
                                 self.reportError(token_compound_stm, 'style', 'Depth of nesting of a function: 0-4' + ' (' + str(nesting_level) + ')', 'LEVEL')
 
     # HIS-RETURN
@@ -601,7 +624,7 @@ class HisMetricChecker():
                         if token.str == "return":
                             num_return_points += 1
                         token = token.next
-                    if num_return_points > 1:
+                    if num_return_points > self.his_metric_upper_limit['RETURN']:
                         self.reportError(func.tokenDef, 'style', 'Number of return points within a function: 0-1' + ' (' + str(num_return_points) + ')', 'RETURN')
 
     # HIS-VOCF
@@ -670,7 +693,16 @@ def main():
     For example, if you'd like to suppress metrics GOTO, CALLS
     and PARAM use:
         --suppress-metrics GOTO,CALLS,PARAM
+    '''
 
+    MODIFY_METRICS_HELP = '''HIS metric plus limit separated by colon
+    (Multiple metrics comma-separated).
+
+    For example, if you'd like to modify limits of metrics RETURN and PARAM use:
+        --modify-metrics RETURN:2,PARAM:6
+
+    The limits of following metrics can be changed:
+        PATH, STCYC, CALLING, CALLS, PARAM, STMT, LEVEL, RETURN
     '''
 
     parser = argparse.ArgumentParser()
@@ -679,6 +711,7 @@ def main():
     parser.add_argument("--cli", help="Addon is executed from Cppcheck", action="store_true")
     parser.add_argument("-verify", help=argparse.SUPPRESS, action="store_true")
     parser.add_argument("--suppress-metrics", type=str, help=SUPPRESS_METRICS_HELP)
+    parser.add_argument("--modify-metrics", type=str, help=MODIFY_METRICS_HELP)
     parser.add_argument("--no-summary", help="hide summary of violations", action="store_true")
     parser.add_argument("--statistics", help="show statistics information", action="store_true")
     args = parser.parse_args()
