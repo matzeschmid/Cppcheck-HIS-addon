@@ -4,7 +4,7 @@ HIS metric python addon for Cppcheck.
 This addon depends on functionality provided by `cppcheckdata.py` which is part of Cppcheck `addons` directory.
 
 This addon has been tested 
-  - with Cppcheck v1.84 up to v2.4.1
+  - with Cppcheck v1.84 up to v2.5
   - using Python 2.7.x as well as 3.8.x
   - on a machine running 64-bit Ubuntu 20.10
   - on a machine running 64-bit Windows 10
